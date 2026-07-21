@@ -6,6 +6,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 # Importation de LinearSegmentedColormap pour créer des dégradés
 from matplotlib.colors import LinearSegmentedColormap
+# Importation de Patch pour construire des légendes personnalisées (catégories)
+from matplotlib.patches import Patch
+# Importation de Line2D pour construire des légendes personnalisées (tailles de bulles)
+from matplotlib.lines import Line2D
+# Importation de FuncFormatter pour formater les axes (pourcentages)
+from matplotlib.ticker import FuncFormatter
 # Importation de LabelEncoder pour encoder les catégories
 from sklearn.preprocessing import LabelEncoder
 # Importation de train_test_split pour séparer les données
@@ -54,6 +60,18 @@ STATUT = {
     "Fraude": ROSE      # Rose/rouge : seule alerte chaude de l'app
 }
 
+# Dictionnaire de couleurs pour les deux grandes familles de variables du modèle
+CATEGORIE_FEATURE = {
+    "Montant": "Transactionnelle",
+    "Localisation_enc": "Transactionnelle",
+    "Type de transaction_enc": "Transactionnelle",
+    "Heure": "Temporelle",
+    "Jour_semaine": "Temporelle",
+    "Mois": "Temporelle",
+}
+# Couleur associée à chaque famille de variables (cohérente avec le reste de la palette)
+COULEUR_CATEGORIE = {"Transactionnelle": ACCENT, "Temporelle": VIOLET}
+
 # Dégradé séquentiel pour la matrice de confusion (marine -> indigo -> cyan)
 SEQUENTIEL = ["#101C3B", "#182A55", "#233F7E", "#3557B0", "#4C6FFF", "#7C97FF", "#A5F3FC"]
 
@@ -91,86 +109,153 @@ def _base(figsize):
     return fig, ax
 
 
-# Fonction pour tracer la répartition des statuts
+# Fonction pour tracer la répartition des statuts sous forme de donut avec légende
 def fig_target(df):
     # Sélection des catégories présentes dans le dataset
     ordre = [c for c in ("Normal", "Suspect", "Fraude") if c in df["Target"].unique()]
     # Comptage des valeurs selon l'ordre choisi
     valeurs = df["Target"].value_counts().reindex(ordre)
-    # Création de la figure de base sans traits
-    fig, ax = _base((6.4, 3.6))
-    # Création du graphique en barres colorées
-    ax.bar(range(len(ordre)), valeurs, width=0.45, color=[STATUT[c] for c in ordre], zorder=2)
-    # Ajout des valeurs chiffrées au-dessus des barres
-    for i, v in enumerate(valeurs):
-        ax.annotate(fmt(v), (i, v), ha="center", va="bottom", fontsize=9.5, fontweight="bold", color=TEXTE, xytext=(0, 5), textcoords="offset points")
-    # Configuration des positions X
-    ax.set_xticks(range(len(ordre)))
-    # Configuration des étiquettes X
-    ax.set_xticklabels(ordre, color=TEXTE, fontsize=9.5, fontweight="600")
-    # Masquage de l'axe Y
-    ax.set_yticks([])
-    # Ajustement de la limite verticale
-    ax.set_ylim(0, valeurs.max() * 1.15)
+    # Total des opérations, affiché au centre du donut
+    total = valeurs.sum()
+    # Création de la figure avec fond sombre
+    fig, ax = plt.subplots(figsize=(6.6, 3.9), facecolor=SURFACE)
+    ax.set_facecolor(SURFACE)
+    # Couleurs associées à chaque statut, dans l'ordre fixe
+    couleurs = [STATUT[c] for c in ordre]
+    # Tracé du donut : anneau fin, séparé par de légers liserés couleur du fond
+    parts, _ = ax.pie(
+        valeurs, colors=couleurs, startangle=90, counterclock=False,
+        wedgeprops=dict(width=0.42, edgecolor=SURFACE, linewidth=3), radius=1.0
+    )
+    # Nombre total inscrit au centre de l'anneau
+    ax.text(0, 0.07, fmt(total), ha="center", va="center", fontsize=19, fontweight="bold", color=TEXTE)
+    # Légende "transactions" sous le total
+    ax.text(0, -0.16, "transactions", ha="center", va="center", fontsize=8.5, color=TEXTE_ATTENUE)
+    # Légende externe avec la part exacte de chaque statut
+    etiquettes = [f"{c}   ·   {v/total:.1%}" for c, v in zip(ordre, valeurs)]
+    ax.legend(
+        parts, etiquettes, loc="center left", bbox_to_anchor=(1.05, 0.5),
+        frameon=False, fontsize=9.5, labelcolor=TEXTE, handlelength=1.1, handleheight=1.4,
+        borderaxespad=0
+    )
+    # Anneau parfaitement circulaire
+    ax.set_aspect("equal")
     # Ajustement automatique des marges
     fig.tight_layout()
     # Renvoi du graphique
     return fig
 
 
-# Fonction pour tracer le Top 10 des villes
+# Fonction pour tracer le Top 10 des villes sous forme de graphique en sucettes (lollipop)
 def fig_villes(df):
     # Extraction des 10 villes les plus fréquentes
     villes = df["Localisation"].value_counts().head(10).sort_values()
     # Création de la figure de base sans traits
-    fig, ax = _base((6.4, 3.9))
-    # Création des barres horizontales
-    ax.barh(villes.index, villes.values, height=0.5, color=CYAN, zorder=2)
-    # Affichage du nombre exact à côté de chaque barre
+    fig, ax = _base((6.4, 4.1))
+    # Tige fine reliant l'axe à chaque valeur
+    ax.hlines(y=range(len(villes)), xmin=0, xmax=villes.values, color=BORDURE, linewidth=1.6, zorder=1)
+    # Point plein au bout de chaque tige
+    ax.scatter(villes.values, range(len(villes)), s=115, color=CYAN, zorder=3, edgecolor=SURFACE, linewidth=1.4)
+    # Affichage du nombre exact à côté de chaque point
     for i, v in enumerate(villes.values):
-        ax.annotate(fmt(v), (v, i), va="center", fontsize=9, color=TEXTE, xytext=(6, 0), textcoords="offset points")
-    # Style des étiquettes verticales
-    ax.tick_params(axis="y", labelcolor=TEXTE, labelsize=9.5)
+        ax.annotate(fmt(v), (v, i), va="center", fontsize=9, fontweight="600", color=TEXTE, xytext=(10, 0), textcoords="offset points")
+    # Étiquettes des villes sur l'axe Y
+    ax.set_yticks(range(len(villes)))
+    ax.set_yticklabels(villes.index, color=TEXTE, fontsize=9.5)
     # Masquage des graduations X
     ax.set_xticks([])
     # Définition de la limite horizontale
-    ax.set_xlim(0, villes.max() * 1.15)
+    ax.set_xlim(0, villes.max() * 1.2)
     # Ajustement des marges
     fig.tight_layout()
     # Renvoi de la figure
     return fig
 
 
-# Fonction pour tracer le montant moyen par canal, coloré selon le risque de fraude
-def fig_montants_canal(df):
-    # Agrégation par canal : montant moyen et taux de fraude observé
+# Fonction pour tracer, sous forme de bulles, le risque et le volume de chaque canal de transaction
+def fig_canaux(df):
+    # Agrégation par canal : montant moyen, volume et taux de fraude observé
     stats = (
         df.groupby("Type de transaction")
-        .agg(montant_moyen=("Montant", "mean"), taux_fraude=("Target", lambda s: (s == "Fraude").mean()))
-        .sort_values("montant_moyen")
+        .agg(montant_moyen=("Montant", "mean"), volume=("Montant", "size"), taux_fraude=("Target", lambda s: (s == "Fraude").mean()))
+        .reset_index()
     )
     # Dégradé du risque : cyan (faible) -> violet -> rose (élevé), cohérent avec les statuts
     cmap_risque = LinearSegmentedColormap.from_list("risque_canal", [CYAN, VIOLET, ROSE])
     # Normalisation du taux de fraude pour le mappage de couleur
     ecart = stats["taux_fraude"].max() - stats["taux_fraude"].min()
     normalise = (stats["taux_fraude"] - stats["taux_fraude"].min()) / (ecart if ecart > 0 else 1)
-    # Couleur de chaque barre selon son niveau de risque
-    couleurs = cmap_risque(normalise)
+    # Taille des bulles proportionnelle au volume de transactions du canal
+    tailles = 320 + (stats["volume"] / stats["volume"].max()) * 2400
+
     # Création du graphique de base sans traits
-    fig, ax = _base((9.6, 3.8))
-    # Barres horizontales : longueur = montant moyen, couleur = taux de fraude
-    ax.barh(range(len(stats)), stats["montant_moyen"], height=0.5, color=couleurs, zorder=2)
-    # Annotation du montant moyen exact à droite de chaque barre
-    for i, v in enumerate(stats["montant_moyen"]):
-        ax.annotate(f"{fmt(v)} FCFA", (v, i), va="center", fontsize=9.5, fontweight="bold", color=TEXTE, xytext=(8, 0), textcoords="offset points")
-    # Étiquettes Y combinant le nom du canal et son taux de fraude observé
-    etiquettes = [f"{canal}   ·   {taux:.1%} de fraude" for canal, taux in zip(stats.index, stats["taux_fraude"])]
-    ax.set_yticks(range(len(stats)))
-    ax.set_yticklabels(etiquettes, color=TEXTE, fontsize=9.5, fontweight="500")
-    # Masquage des graduations X
-    ax.set_xticks([])
-    # Limite horizontale avec marge pour les annotations
-    ax.set_xlim(0, stats["montant_moyen"].max() * 1.35)
+    fig, ax = _base((9.6, 4.4))
+    # Nuage de points : position = montant moyen / taux de fraude, taille = volume, couleur = niveau de risque
+    dispersion = ax.scatter(
+        stats["montant_moyen"], stats["taux_fraude"], s=tailles,
+        c=normalise, cmap=cmap_risque, alpha=0.88, edgecolor=SURFACE, linewidth=1.6, zorder=3
+    )
+    # Nom du canal inscrit au centre de chaque bulle
+    for _, ligne in stats.iterrows():
+        ax.annotate(
+            ligne["Type de transaction"], (ligne["montant_moyen"], ligne["taux_fraude"]),
+            ha="center", va="center", fontsize=8.5, fontweight="700", color=TEXTE, zorder=4
+        )
+    # Étiquette de l'axe X
+    ax.set_xlabel("Montant moyen (FCFA)", fontsize=9.5, color=TEXTE_ATTENUE, labelpad=10)
+    # Étiquette de l'axe Y
+    ax.set_ylabel("Taux de fraude", fontsize=9.5, color=TEXTE_ATTENUE, labelpad=10)
+    # Formatage de l'axe Y en pourcentage
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.0%}"))
+    # Réactivation discrète des graduations Y pour lire l'échelle du risque
+    ax.tick_params(axis="y", length=0, labelsize=8.5)
+    ax.tick_params(axis="x", length=0, labelsize=8.5)
+    # Marges autour du nuage de points
+    ax.set_xlim(stats["montant_moyen"].min() * 0.7, stats["montant_moyen"].max() * 1.3)
+    marge_y = max(stats["taux_fraude"].max() * 0.35, 0.02)
+    ax.set_ylim(max(0, stats["taux_fraude"].min() - marge_y), stats["taux_fraude"].max() + marge_y)
+    # Légende de taille : le volume de transactions représenté par deux bulles de référence
+    reperes_taille = [
+        Line2D([0], [0], marker="o", color="none", markerfacecolor=TEXTE_ATTENUE, alpha=0.45, markersize=7, label="Faible volume"),
+        Line2D([0], [0], marker="o", color="none", markerfacecolor=TEXTE_ATTENUE, alpha=0.45, markersize=15, label="Fort volume"),
+    ]
+    ax.legend(handles=reperes_taille, loc="upper left", frameon=False, fontsize=8.5, labelcolor=TEXTE, handletextpad=1.1, borderaxespad=0)
+    # Barre de couleur : légende du niveau de risque (taux de fraude)
+    barre_couleur = fig.colorbar(dispersion, ax=ax, fraction=0.045, pad=0.02)
+    barre_couleur.ax.tick_params(colors=TEXTE_ATTENUE, length=0, labelsize=0)
+    barre_couleur.outline.set_visible(False)
+    barre_couleur.set_label("Niveau de risque (faible → élevé)", fontsize=8.5, color=TEXTE_ATTENUE)
+    # Ajustement des marges
+    fig.tight_layout()
+    # Renvoi du graphique
+    return fig
+
+
+# Fonction pour tracer l'évolution mensuelle des transactions, par statut
+def fig_evolution(df):
+    # Copie de sécurité des données
+    tmp = df.dropna(subset=["Date"]).copy()
+    # Regroupement par mois calendaire
+    tmp["Periode"] = tmp["Date"].dt.to_period("M").astype(str)
+    # Comptage croisé mois x statut
+    pivot = tmp.groupby(["Periode", "Target"]).size().unstack(fill_value=0)
+    # Ordre fixe des statuts pour un code couleur stable
+    ordre = [c for c in ("Normal", "Suspect", "Fraude") if c in pivot.columns]
+    pivot = pivot[ordre].sort_index()
+
+    # Création du graphique de base sans traits
+    fig, ax = _base((9.6, 3.9))
+    # Une courbe par statut, remplissage léger sous la courbe pour la lisibilité
+    for statut in ordre:
+        ax.plot(pivot.index, pivot[statut], marker="o", markersize=4.5, linewidth=2.2, color=STATUT[statut], label=statut, zorder=3)
+        ax.fill_between(pivot.index, pivot[statut], color=STATUT[statut], alpha=0.07, zorder=1)
+    # Étiquettes du temps en abscisse, légèrement inclinées
+    ax.set_xticks(range(len(pivot.index)))
+    ax.set_xticklabels(pivot.index, color=TEXTE_ATTENUE, fontsize=8.5, rotation=35, ha="right")
+    # Masquage de l'axe Y (les valeurs exactes comptent moins que la tendance)
+    ax.set_yticks([])
+    # Légende horizontale au-dessus du graphique, une entrée par statut
+    ax.legend(loc="upper left", frameon=False, fontsize=9.5, labelcolor=TEXTE, ncol=len(ordre), bbox_to_anchor=(0, 1.12))
     # Ajustement des marges
     fig.tight_layout()
     # Renvoi du graphique
@@ -182,11 +267,11 @@ def fig_confusion(cm, classes):
     # Création d'une palette dégradée bleu -> sarcelle
     cmap = LinearSegmentedColormap.from_list("marine_indigo", SEQUENTIEL)
     # Création de la figure
-    fig, ax = plt.subplots(figsize=(5.2, 4.4), facecolor=SURFACE)
+    fig, ax = plt.subplots(figsize=(5.4, 4.4), facecolor=SURFACE)
     # Couleur de fond
     ax.set_facecolor(SURFACE)
     # Affichage de la matrice sous forme d'image
-    ax.imshow(cm, cmap=cmap)
+    image = ax.imshow(cm, cmap=cmap)
     # Définition du seuil pour la couleur du texte
     seuil = cm.max() * 0.55
     # Boucle sur les lignes et colonnes de la matrice
@@ -213,39 +298,49 @@ def fig_confusion(cm, classes):
     # Masquage de tous les traits extérieurs
     for spine in ax.spines.values():
         spine.set_visible(False)
+    # Barre de couleur : légende du nombre de cas représenté par chaque teinte
+    barre_couleur = fig.colorbar(image, ax=ax, fraction=0.046, pad=0.03)
+    barre_couleur.ax.tick_params(colors=TEXTE_ATTENUE, length=0, labelsize=8)
+    barre_couleur.outline.set_visible(False)
+    barre_couleur.set_label("Nombre de cas", fontsize=8.5, color=TEXTE_ATTENUE)
     # Ajustement de la disposition
     fig.tight_layout()
     # Renvoi de la matrice visuelle
     return fig
 
 
-# Fonction pour tracer l'importance des variables
+# Fonction pour tracer l'importance des variables, regroupées par famille (temporelle / transactionnelle)
 def fig_importance(modele, features):
     # Calcul et tri des importances de variables
     imp = pd.Series(modele.feature_importances_, index=features).sort_values()
     # Dictionnaire de traduction propre des noms de colonnes
     noms = {"Montant": "Montant", "Heure": "Heure", "Jour_semaine": "Jour de la semaine", "Mois": "Mois", "Localisation_enc": "Localisation", "Type de transaction_enc": "Type de transaction"}
+    # Couleur de chaque barre selon la famille de la variable
+    couleurs = [COULEUR_CATEGORIE[CATEGORIE_FEATURE.get(f, "Transactionnelle")] for f in imp.index]
     # Création du graphique de base sans traits
-    fig, ax = _base((5.6, 3.6))
+    fig, ax = _base((5.6, 3.8))
     # Création des barres d'importance
-    ax.barh([noms.get(f, f) for f in imp.index], imp.values, height=0.45, color=ACCENT, zorder=2)
+    ax.barh([noms.get(f, f) for f in imp.index], imp.values, height=0.45, color=couleurs, zorder=2)
     # Affichage du score exact à côté de la barre
     for i, v in enumerate(imp.values):
         ax.annotate(f"{v:.3f}", (v, i), va="center", fontsize=9, color=TEXTE, xytext=(6, 0), textcoords="offset points")
     # Masquer les graduations X
     ax.set_xticks([])
-    # Ajuster la largeur max
-    ax.set_xlim(0, imp.max() * 1.2)
+    # Ajuster la largeur max, avec marge pour la légende
+    ax.set_xlim(0, imp.max() * 1.25)
+    # Légende des deux familles de variables
+    reperes_categories = [Patch(color=couleur, label=cat) for cat, couleur in COULEUR_CATEGORIE.items()]
+    ax.legend(handles=reperes_categories, loc="lower right", frameon=False, fontsize=8.5, labelcolor=TEXTE, borderaxespad=0)
     # Ajuster le layout
     fig.tight_layout()
     # Renvoi de la figure
     return fig
 
 
-# Fonction pour tracer les probabilités estimées
+# Fonction pour tracer les probabilités estimées par le modèle pour la transaction simulée
 def fig_probas(probas, classes):
     # Création du graphique de base sans traits
-    fig, ax = _base((6.0, 2.2))
+    fig, ax = _base((6.0, 2.4))
     # Associer la couleur correspondant au statut
     couleurs = [STATUT.get(c, ACCENT) for c in classes]
     # Barres de probabilités
@@ -258,7 +353,10 @@ def fig_probas(probas, classes):
     # Masquer les étiquettes X
     ax.set_xticks([])
     # Limite max de l'axe X
-    ax.set_xlim(0, 1.15)
+    ax.set_xlim(0, 1.18)
+    # Ligne verticale de repère au seuil de décision (50%)
+    ax.axvline(0.5, color=TEXTE_ATTENUE, linestyle="--", linewidth=1, alpha=0.55, zorder=1)
+    ax.annotate("seuil 50%", (0.5, len(classes) - 0.55), fontsize=7.5, color=TEXTE_ATTENUE, ha="center", va="top")
     # Ajustement final
     fig.tight_layout()
     # Renvoi du graphique
@@ -707,20 +805,28 @@ def main():
         st.write("")
         # Disposition en 2 colonnes pour les graphiques
         gauche, droite = st.columns(2)
-        # Bloc de gauche pour le statut des opérations
+        # Bloc de gauche : donut de répartition des statuts
         with gauche, st.container(border=True):
-            carte_titre("Répartition des Classes", "Distribution du statut des opérations")
+            carte_titre("Répartition des Classes", "Part de chaque statut, en anneau · légende avec pourcentages")
             st.pyplot(fig_target(df), use_container_width=True)
 
-        # Bloc de droite pour les villes
+        # Bloc de droite : sucettes des villes les plus actives
         with droite, st.container(border=True):
             carte_titre("Top 10 Villes Actives", "Volume de transactions par localisation")
             st.pyplot(fig_villes(df), use_container_width=True)
 
-        # Conteneur pour le montant moyen par canal
+        # Conteneur pour le risque et le volume par canal, sous forme de bulles
         with st.container(border=True):
-            carte_titre("Montant Moyen & Risque par Canal", "Longueur = montant moyen (FCFA) · Couleur = taux de fraude observé")
-            st.pyplot(fig_montants_canal(df), use_container_width=True)
+            carte_titre(
+                "Risque et Volume par Canal de Paiement",
+                "Position = montant moyen & taux de fraude · Taille = volume de transactions · Couleur = niveau de risque"
+            )
+            st.pyplot(fig_canaux(df), use_container_width=True)
+
+        # Conteneur pour l'évolution mensuelle des transactions
+        with st.container(border=True):
+            carte_titre("Évolution Mensuelle des Transactions", "Nombre d'opérations par mois, par statut")
+            st.pyplot(fig_evolution(df), use_container_width=True)
 
         # Conteneur pour le tableau de données
         with st.container(border=True):
@@ -815,14 +921,14 @@ def main():
         st.write("")
         # Colonnes pour les graphiques
         gauche, droite = st.columns(2)
-        # Matrice de confusion
+        # Matrice de confusion, avec légende de couleur (nombre de cas)
         with gauche, st.container(border=True):
-            carte_titre("Matrice de Confusion", "Évaluation des vrais/faux positifs")
+            carte_titre("Matrice de Confusion", "Vrais/faux positifs · couleur = nombre de cas")
             st.pyplot(fig_confusion(metriques["matrice"], le_target.classes_), use_container_width=True)
 
-        # Importance des variables
+        # Importance des variables, regroupées par famille avec légende
         with droite, st.container(border=True):
-            carte_titre("Importance des Features", "Poids décisionnel de chaque variable dans l'arbre")
+            carte_titre("Importance des Features", "Poids décisionnel par variable, groupé par famille")
             st.pyplot(fig_importance(modele, metriques["features"]), use_container_width=True)
 
         # Rapport de classification texte
@@ -894,7 +1000,7 @@ def main():
                         f'</div>',
                         unsafe_allow_html=True
                     )
-                    # Graphique des probabilités
+                    # Graphique des probabilités, avec seuil de décision repère
                     st.pyplot(fig_probas(probas, list(le_target.classes_)), use_container_width=True)
             else:
                 # Message en attente de soumission
