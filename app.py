@@ -28,10 +28,6 @@ INK = "#f8fafc"
 INK2 = "#94a3b8"
 # Couleur des éléments discrets (Gris)
 MUTED = "#64748b"
-# Couleur des grilles des graphiques
-GRID = "#334155"
-# Couleur des bordures et axes
-BASELINE = "#475569"
 
 # Couleur d'accentuation principale (Cyan lumineux)
 ACCENT = "#06b6d4"
@@ -50,7 +46,7 @@ STATUT = {
 # Liste de couleurs pour le dégradé de la matrice de confusion
 SEQUENTIEL = ["#083344", "#164e63", "#155e75", "#0e7490", "#06b6d4", "#22d3ee", "#67e8f9"]
 
-# Configuration par défaut des textes et axes Matplotlib
+# Configuration par défaut des textes Matplotlib
 plt.rcParams.update({
     "font.family": "sans-serif",  # Police sans empattement
     "font.size": 9.5,            # Taille de police standard
@@ -67,23 +63,19 @@ def fmt(n):
     return f"{n:,.0f}".replace(",", " ")
 
 
-# Fonction de base pour créer une figure Matplotlib
+# Fonction de base pour créer une figure Matplotlib sans traits ni grilles
 def _base(figsize):
     # Création de la figure et de l'axe avec fond sombre
     fig, ax = plt.subplots(figsize=figsize, facecolor=SURFACE_CARD)
     # Définition de la couleur de fond de l'axe
     ax.set_facecolor(SURFACE_CARD)
-    # Masquage des bordures haute et droite
-    for cote in ("top", "right"):
+    # Suppression de tous les traits d'encadrement (spines)
+    for cote in ("top", "right", "left", "bottom"):
         ax.spines[cote].set_visible(False)
-    # Personnalisation des bordures gauche et basse
-    for cote in ("left", "bottom"):
-        ax.spines[cote].set_color(BASELINE)
-        ax.spines[cote].set_linewidth(0.8)
-    # Suppression des petites encoches des axes
+    # Suppression de la grille
+    ax.grid(False)
+    # Suppression des encoches sur les axes
     ax.tick_params(length=0, labelsize=9)
-    # Placement de la grille au second plan
-    ax.set_axisbelow(True)
     # Renvoi de la figure et de l'axe
     return fig, ax
 
@@ -94,12 +86,8 @@ def fig_target(df):
     ordre = [c for c in ("Normal", "Suspect", "Fraude") if c in df["Target"].unique()]
     # Comptage des valeurs selon l'ordre choisi
     valeurs = df["Target"].value_counts().reindex(ordre)
-    # Création de la figure de base
+    # Création de la figure de base sans traits
     fig, ax = _base((6.4, 3.6))
-    # Ajout d'une grille horizontale pointillée
-    ax.grid(axis="y", color=GRID, linewidth=0.8, linestyle="--")
-    # Cacher la bordure gauche
-    ax.spines["left"].set_visible(False)
     # Création du graphique en barres colorées
     ax.bar(range(len(ordre)), valeurs, width=0.45, color=[STATUT[c] for c in ordre], zorder=2)
     # Ajout des valeurs chiffrées au-dessus des barres
@@ -109,6 +97,8 @@ def fig_target(df):
     ax.set_xticks(range(len(ordre)))
     # Configuration des étiquettes X
     ax.set_xticklabels(ordre, color=INK, fontsize=9.5, fontweight="600")
+    # Masquage de l'axe Y
+    ax.set_yticks([])
     # Ajustement de la limite verticale
     ax.set_ylim(0, valeurs.max() * 1.15)
     # Ajustement automatique des marges
@@ -121,12 +111,8 @@ def fig_target(df):
 def fig_villes(df):
     # Extraction des 10 villes les plus fréquentes
     villes = df["Localisation"].value_counts().head(10).sort_values()
-    # Création de la figure de base
+    # Création de la figure de base sans traits
     fig, ax = _base((6.4, 3.9))
-    # Ajout de la grille verticale
-    ax.grid(axis="x", color=GRID, linewidth=0.8, linestyle="--")
-    # Cacher la bordure du bas
-    ax.spines["bottom"].set_visible(False)
     # Création des barres horizontales
     ax.barh(villes.index, villes.values, height=0.5, color=ACCENT_CLAIR, zorder=2)
     # Affichage du nombre exact à côté de chaque barre
@@ -150,14 +136,12 @@ def fig_boxplot(df):
     types_tx = sorted(df["Type de transaction"].astype(str).unique())
     # Filtrage des montants par type de transaction
     donnees = [df.loc[(df["Type de transaction"] == t) & (df["Montant"] > 0), "Montant"] for t in types_tx]
-    # Création du graphique de base
+    # Création du graphique de base sans traits
     fig, ax = _base((9.6, 3.8))
-    # Ajout de la grille horizontale
-    ax.grid(axis="y", color=GRID, linewidth=0.8, linestyle="--")
     # Passage à une échelle logarithmique pour la lisibilité
     ax.set_yscale("log")
     # Dessin des boîtes à moustaches
-    ax.boxplot(donnees, widths=0.4, patch_artist=True, boxprops=dict(facecolor=ACCENT_BG, edgecolor=ACCENT_CLAIR, linewidth=1.2), medianprops=dict(color=ACCENT, linewidth=2), whiskerprops=dict(color=BASELINE, linewidth=1), capprops=dict(color=BASELINE, linewidth=1), flierprops=dict(marker="o", markersize=3, markerfacecolor=MUTED, markeredgecolor="none", alpha=0.4))
+    ax.boxplot(donnees, widths=0.4, patch_artist=True, boxprops=dict(facecolor=ACCENT_BG, edgecolor=ACCENT_CLAIR, linewidth=1.2), medianprops=dict(color=ACCENT, linewidth=2), whiskerprops=dict(color=MUTED, linewidth=1), capprops=dict(color=MUTED, linewidth=1), flierprops=dict(marker="o", markersize=3, markerfacecolor=MUTED, markeredgecolor="none", alpha=0.4))
     # Nom des canaux en axe X
     ax.set_xticklabels(types_tx, color=INK, fontsize=9.5, fontweight="500")
     # Formateur personnalisé des montants en axe Y
@@ -205,7 +189,7 @@ def fig_confusion(cm, classes):
     ax.set_ylabel("Vraie valeur", fontsize=9.5, color=INK2, labelpad=10)
     # Suppression des encoches
     ax.tick_params(length=0)
-    # Masquage des bordures extérieures
+    # Masquage de tous les traits extérieurs
     for spine in ax.spines.values():
         spine.set_visible(False)
     # Ajustement de la disposition
@@ -220,18 +204,14 @@ def fig_importance(modele, features):
     imp = pd.Series(modele.feature_importances_, index=features).sort_values()
     # Dictionnaire de traduction propre des noms de colonnes
     noms = {"Montant": "Montant", "Heure": "Heure", "Jour_semaine": "Jour de la semaine", "Mois": "Mois", "Localisation_enc": "Localisation", "Type de transaction_enc": "Type de transaction"}
-    # Création du graphique de base
+    # Création du graphique de base sans traits
     fig, ax = _base((5.6, 3.6))
-    # Ajout de la grille X
-    ax.grid(axis="x", color=GRID, linewidth=0.8, linestyle="--")
-    # Masquer le bas
-    ax.spines["bottom"].set_visible(False)
     # Création des barres d'importance
     ax.barh([noms.get(f, f) for f in imp.index], imp.values, height=0.45, color=ACCENT, zorder=2)
     # Affichage du score exact à côté de la barre
     for i, v in enumerate(imp.values):
         ax.annotate(f"{v:.3f}", (v, i), va="center", fontsize=9, color=INK, xytext=(6, 0), textcoords="offset points")
-    # Masquer les graduations
+    # Masquer les graduations X
     ax.set_xticks([])
     # Ajuster la largeur max
     ax.set_xlim(0, imp.max() * 1.2)
@@ -243,12 +223,8 @@ def fig_importance(modele, features):
 
 # Fonction pour tracer les probabilités estimées
 def fig_probas(probas, classes):
-    # Création du graphique
+    # Création du graphique de base sans traits
     fig, ax = _base((6.0, 2.2))
-    # Grille verticale
-    ax.grid(axis="x", color=GRID, linewidth=0.8, linestyle="--")
-    # Cacher le bas
-    ax.spines["bottom"].set_visible(False)
     # Associer la couleur correspondant au statut
     couleurs = [STATUT.get(c, ACCENT) for c in classes]
     # Barres de probabilités
@@ -279,7 +255,7 @@ def charger_donnees():
     return df
 
 
-# Fonction mise en cache pour entraîner l'IA
+# Fonction mise en cache pour entraîner le modèle
 @st.cache_resource
 def entrainer_modele(df):
     # Copie de sécurité des données
@@ -332,7 +308,7 @@ def entrainer_modele(df):
     return modele, encodeurs, le_target, metriques
 
 
-# Code CSS personnalisé pour le style Cyber / Dark Cyan
+# Code CSS personnalisé pour le style Dark Cyan sans encadrements lourds
 CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -355,11 +331,9 @@ header[data-testid="stHeader"] { background: transparent; }
 /* Carte d'en-tête (Hero section) */
 .hero {
     background: #1e293b;
-    border: 1px solid #334155;
     border-radius: 16px;
     padding: 1.8rem 2.2rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .hero h1 {
@@ -375,12 +349,11 @@ header[data-testid="stHeader"] { background: transparent; }
     font-size: 0.95rem;
 }
 
-/* Badge du modèle */
+/* Badge du modèle sans icône */
 .badge {
     display: inline-block;
     background: #164e63;
     color: #22d3ee;
-    border: 1px solid #0891b2;
     border-radius: 99px;
     padding: 4px 14px;
     font-size: 0.78rem;
@@ -389,12 +362,11 @@ header[data-testid="stHeader"] { background: transparent; }
     vertical-align: middle;
 }
 
-/* Style des cartes / conteneurs Streamlit */
+/* Style des cartes / conteneurs Streamlit sans bordures */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background: #1e293b;
-    border: 1px solid #334155 !important;
+    border: none !important;
     border-radius: 14px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
 }
 
 .card-titre {
@@ -413,7 +385,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 /* Métriques d'en-tête (KPIs) */
 [data-testid="stMetric"] {
     background: #1e293b;
-    border: 1px solid #334155;
+    border: none;
     border-radius: 12px;
     padding: 16px 20px;
 }
@@ -433,9 +405,9 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 /* Onglets personnalisés */
 .stTabs [data-baseweb="tab-list"] {
     gap: 8px;
-    border-bottom: 1px solid #334155;
     background: transparent;
     padding: 0 0 10px 0;
+    border-bottom: none;
 }
 
 .stTabs [data-baseweb="tab"] {
@@ -444,14 +416,13 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     color: #94a3b8;
     font-weight: 500;
     background: #0f172a;
-    border: 1px solid #334155;
+    border: none;
     border-radius: 8px;
 }
 
 .stTabs [aria-selected="true"] {
     color: #06b6d4 !important;
     background: #164e63 !important;
-    border-color: #0891b2 !important;
     font-weight: 600 !important;
 }
 
@@ -485,19 +456,16 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 .resultat.normal {
     background: rgba(16, 185, 129, 0.15);
     color: #34d399;
-    border: 1px solid #059669;
 }
 
 .resultat.suspect {
     background: rgba(245, 158, 11, 0.15);
     color: #fbbf24;
-    border: 1px solid #d97706;
 }
 
 .resultat.fraude {
     background: rgba(239, 68, 68, 0.15);
     color: #f87171;
-    border: 1px solid #dc2626;
 }
 </style>
 """
@@ -515,7 +483,7 @@ def carte_titre(titre, sous_titre=None):
 # Fonction principale exécutant l'application
 def main():
     # Configuration initiale de la page web
-    st.set_page_config(page_title="Détection de fraude bancaire", page_icon="🛡️", layout="wide")
+    st.set_page_config(page_title="Détection de fraude bancaire", layout="wide")
     # Application des styles CSS
     st.markdown(CSS, unsafe_allow_html=True)
 
@@ -524,7 +492,7 @@ def main():
     # Entraînement du modèle et récupération des métriques
     modele, encodeurs, le_target, metriques = entrainer_modele(df)
 
-    # Création du bloc d'en-tête (Hero section)
+    # Création du bloc d'en-tête sans icônes
     st.markdown(
         '<div class="hero">'
         '<h1>Détection de Fraude Bancaire <span class="badge">Random Forest</span></h1>'
@@ -533,9 +501,9 @@ def main():
         unsafe_allow_html=True
     )
 
-    # Création de la navigation par onglets
+    # Création des onglets sans icônes
     onglet_donnees, onglet_modele, onglet_prediction = st.tabs(
-        ["📈 Données & Exploration", "⚙️ Performance Modèle", "⚡ Inférence & Simulation"]
+        ["Données & Exploration", "Performance Modèle", "Inférence & Simulation"]
     )
 
     # --- Onglet 1 : Exploration des données ---
