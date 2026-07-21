@@ -549,7 +549,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     font-size: 1.65rem;
 }
 
-/* Onglets pleine largeur façon sélecteur de cartes, plus grands et plus lisibles */
+/* Onglets pleine largeur façon sélecteur de cartes, une couleur d'accent distincte par onglet */
 .stTabs [data-baseweb="tab-list"] {
     display: flex;
     gap: 10px;
@@ -568,29 +568,48 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #8CA0C7;
+    color: #EAF0FF;
     font-weight: 600;
     font-size: 0.98rem;
     letter-spacing: 0.01em;
-    background: #101C3B;
+    background: #16264C;
     border: 1px solid #22315C;
-    border-radius: 14px;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    border-left: 3px solid #22315C;
+    border-radius: 12px;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
+
+/* Repère de couleur au repos, propre à chaque onglet */
+.stTabs [data-baseweb="tab"]:nth-of-type(1) { border-left-color: #22D3EE; }
+.stTabs [data-baseweb="tab"]:nth-of-type(2) { border-left-color: #A78BFA; }
+.stTabs [data-baseweb="tab"]:nth-of-type(3) { border-left-color: #4C6FFF; }
 
 .stTabs [data-baseweb="tab"]:hover {
-    border-color: #3B4E8A;
-    background: #142149;
-    color: #C7D4F5;
+    background: #1B2C57;
+    color: #FFFFFF;
 }
 
-.stTabs [aria-selected="true"] {
-    color: #FFFFFF !important;
-    background: linear-gradient(135deg, #4C6FFF 0%, #3557B0 100%) !important;
+/* Onglet actif : fond plein dans la couleur d'accent qui lui est propre */
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
     border-color: transparent !important;
     font-weight: 700 !important;
-    box-shadow: 0 8px 22px rgba(76,111,255,0.35);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.28);
     transform: translateY(-1px);
+}
+
+.stTabs [data-baseweb="tab"][aria-selected="true"]:nth-of-type(1) {
+    background: linear-gradient(135deg, #22D3EE 0%, #0E7A90 100%) !important;
+    color: #06222A !important;
+}
+
+.stTabs [data-baseweb="tab"][aria-selected="true"]:nth-of-type(2) {
+    background: linear-gradient(135deg, #A78BFA 0%, #5B3FA6 100%) !important;
+    color: #1C1035 !important;
+}
+
+.stTabs [data-baseweb="tab"][aria-selected="true"]:nth-of-type(3) {
+    background: linear-gradient(135deg, #4C6FFF 0%, #3557B0 100%) !important;
+    color: #FFFFFF !important;
 }
 
 .stTabs [data-baseweb="tab-highlight"],
@@ -811,7 +830,7 @@ def main():
 
     # Création des onglets
     onglet_donnees, onglet_modele, onglet_prediction = st.tabs(
-        ["📊  Exploration des Données", "🎯  Performance du Modèle", "🧪  Simuler une Transaction"]
+        ["Exploration des Données", "Performance du Modèle", "Simuler une Transaction"]
     )
 
     # --- Onglet 1 : Exploration des données ---
