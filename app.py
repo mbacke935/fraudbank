@@ -536,6 +536,61 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     color: #FF5E77;
 }
 
+/* Sous-panneau imbriqué (barre de filtres) : fond distinct, plus clair que la carte parente */
+div[data-testid="stVerticalBlockBorderWrapper"] div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #16264C !important;
+    border-color: #2B3B6B !important;
+}
+
+/* Étiquette compacte au-dessus d'un filtre */
+.mini-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8CA0C7;
+}
+
+/* Compteur de résultats filtrés */
+.compteur {
+    display: inline-block;
+    background: rgba(76,111,255,0.15);
+    border: 1px solid rgba(76,111,255,0.35);
+    color: #7C97FF;
+    border-radius: 99px;
+    padding: 3px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+/* Multiselect du filtre par statut : puces colorées et cohérentes avec le code couleur */
+div[data-baseweb="tag"] {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+
+div[data-baseweb="tag"]:nth-of-type(3n+1) { background: rgba(20,214,184,0.18) !important; color: #14D6B8 !important; }
+div[data-baseweb="tag"]:nth-of-type(3n+2) { background: rgba(246,185,59,0.18) !important; color: #F6B93B !important; }
+div[data-baseweb="tag"]:nth-of-type(3n+3) { background: rgba(255,94,119,0.18) !important; color: #FF5E77 !important; }
+
+div[data-baseweb="tag"] svg { fill: currentColor !important; }
+
+/* Menu déroulant du multiselect, rendu en portail : on l'aligne sur le thème sombre */
+ul[data-baseweb="menu"] {
+    background: #101C3B !important;
+    border: 1px solid #22315C !important;
+}
+
+ul[data-baseweb="menu"] li {
+    color: #EAF0FF !important;
+}
+
+ul[data-baseweb="menu"] li:hover {
+    background: rgba(76,111,255,0.15) !important;
+}
+
 /* Style du tableau Streamlit */
 div[data-testid="stDataFrame"] {
     background-color: #101C3B;
@@ -632,26 +687,44 @@ def main():
 
         # Conteneur pour le tableau de données
         with st.container(border=True):
-            carte_titre("Aperçu du Dataset Cleaned", f"{fmt(len(df))} opérations enregistrées au total")
+            carte_titre("Aperçu du Dataset Cleaned")
 
-            # Barre d'outils de filtrage rapide au-dessus du tableau
-            f_col1, f_col2 = st.columns([1, 2])
-            with f_col1:
-                # Filtre par statut
-                filtre_statut = st.multiselect(
-                    "Filtrer par statut",
-                    options=list(df["Target"].unique()),
-                    default=list(df["Target"].unique()),
-                    placeholder="Choisir un statut"
-                )
-            with f_col2:
-                # Recherche textuelle sur la ville
-                recherche_ville = st.text_input("Rechercher une ville", placeholder="Ex: Dakar, Thiès...")
+            # Ordre fixe des statuts, garantit un code couleur stable pour les puces
+            ordre_statuts = [c for c in ("Normal", "Suspect", "Fraude") if c in df["Target"].unique()]
+
+            # Sous-panneau de filtres, fond distinct de la carte et du tableau
+            with st.container(border=True):
+                f_col1, f_col2 = st.columns([1.3, 1])
+                with f_col1:
+                    st.markdown('<span class="mini-label">Filtrer par statut</span>', unsafe_allow_html=True)
+                    # Filtre par statut : sélection multiple, ordre fixe pour les couleurs
+                    filtre_statut = st.multiselect(
+                        "Filtrer par statut",
+                        options=ordre_statuts,
+                        default=ordre_statuts,
+                        placeholder="Choisir un statut",
+                        label_visibility="collapsed"
+                    )
+                with f_col2:
+                    st.markdown('<span class="mini-label">Rechercher une ville</span>', unsafe_allow_html=True)
+                    # Recherche textuelle sur la ville
+                    recherche_ville = st.text_input(
+                        "Rechercher une ville",
+                        placeholder="Ex: Dakar, Thiès...",
+                        label_visibility="collapsed"
+                    )
 
             # Application des filtres
             df_filtre = df[df["Target"].isin(filtre_statut)]
             if recherche_ville:
                 df_filtre = df_filtre[df_filtre["Localisation"].str.contains(recherche_ville, case=False, na=False)]
+
+            # Compteur de résultats dynamique, remplace le sous-titre statique
+            st.markdown(
+                f'<p class="card-sous-titre" style="margin-top:0.8rem;">{fmt(len(df_filtre))} opération(s) affichée(s)'
+                f'<span class="compteur">sur {fmt(len(df))} au total</span></p>',
+                unsafe_allow_html=True
+            )
 
             # Affichage du tableau interactif stylisé
             st.dataframe(
