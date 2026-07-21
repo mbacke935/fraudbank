@@ -467,6 +467,17 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     background: rgba(239, 68, 68, 0.15);
     color: #f87171;
 }
+
+/* Style du tableau Streamlit */
+div[data-testid="stDataFrame"] {
+    background-color: #1e293b;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+div[data-testid="stDataFrame"] iframe {
+    border-radius: 10px;
+}
 </style>
 """
 
@@ -538,10 +549,43 @@ def main():
             carte_titre("Analyse des Montants par Canal", "Distribution financière en FCFA (Échelle Log)")
             st.pyplot(fig_boxplot(df), use_container_width=True)
 
-        # Conteneur pour le tableau de données
+        # Conteneur redesigné pour le tableau de données
         with st.container(border=True):
-            carte_titre("Aperçu du Dataset Cleaned", f"{fmt(len(df))} opérations enregistrées")
-            st.dataframe(df.head(100), use_container_width=True, height=280)
+            carte_titre("Aperçu du Dataset Cleaned", f"{fmt(len(df))} opérations enregistrées au total")
+            
+            # Barre d'outils de filtrage rapide au-dessus du tableau
+            f_col1, f_col2 = st.columns([1, 2])
+            with f_col1:
+                # Filtre par statut
+                filtre_statut = st.multiselect(
+                    "Filtrer par statut",
+                    options=list(df["Target"].unique()),
+                    default=list(df["Target"].unique()),
+                    placeholder="Choisir un statut"
+                )
+            with f_col2:
+                # Recherche textuelle sur la ville
+                recherche_ville = st.text_input("Rechercher une ville", placeholder="Ex: Dakar, Thiès...")
+
+            # Application des filtres
+            df_filtre = df[df["Target"].isin(filtre_statut)]
+            if recherche_ville:
+                df_filtre = df_filtre[df_filtre["Localisation"].str.contains(recherche_ville, case=False, na=False)]
+
+            # Affichage du tableau interactif stylisé
+            st.dataframe(
+                df_filtre,
+                use_container_width=True,
+                height=320,
+                hide_index=True,
+                column_config={
+                    "Date": st.column_config.DatetimeColumn("Date & Heure", format="DD/MM/YYYY HH:mm"),
+                    "Montant": st.column_config.NumberColumn("Montant (FCFA)", format="%d FCFA"),
+                    "Target": st.column_config.TextColumn("Statut"),
+                    "Localisation": st.column_config.TextColumn("Ville"),
+                    "Type de transaction": st.column_config.TextColumn("Canal")
+                }
+            )
 
     # --- Onglet 2 : Performance du modèle ---
     with onglet_modele:
