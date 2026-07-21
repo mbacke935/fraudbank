@@ -549,31 +549,57 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     font-size: 1.65rem;
 }
 
-/* Onglets en pilule (segmented control) */
+/* Onglets pleine largeur façon sélecteur de cartes, plus grands et plus lisibles */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 6px;
-    background: #101C3B;
-    padding: 6px;
-    border: 1px solid #22315C;
-    border-radius: 12px;
+    display: flex;
+    gap: 10px;
+    background: transparent;
+    padding: 0;
+    border: none;
     border-bottom: none;
-    width: fit-content;
+    width: 100%;
+    margin-bottom: 1.4rem;
 }
 
 .stTabs [data-baseweb="tab"] {
-    height: 38px;
-    padding: 0 20px;
+    flex: 1;
+    height: 58px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #8CA0C7;
-    font-weight: 500;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.98rem;
+    letter-spacing: 0.01em;
+    background: #101C3B;
+    border: 1px solid #22315C;
+    border-radius: 14px;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    border-color: #3B4E8A;
+    background: #142149;
+    color: #C7D4F5;
 }
 
 .stTabs [aria-selected="true"] {
     color: #FFFFFF !important;
     background: linear-gradient(135deg, #4C6FFF 0%, #3557B0 100%) !important;
-    font-weight: 600 !important;
+    border-color: transparent !important;
+    font-weight: 700 !important;
+    box-shadow: 0 8px 22px rgba(76,111,255,0.35);
+    transform: translateY(-1px);
+}
+
+.stTabs [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"] {
+    display: none;
+}
+
+.stTabs [data-baseweb="tab-panel"] {
+    padding-top: 0.2rem;
 }
 
 /* Boutons : dégradé indigo avec légère élévation au survol */
@@ -785,7 +811,7 @@ def main():
 
     # Création des onglets
     onglet_donnees, onglet_modele, onglet_prediction = st.tabs(
-        ["Exploration des Données", "Performance du Modèle", "Simuler une Transaction"]
+        ["📊  Exploration des Données", "🎯  Performance du Modèle", "🧪  Simuler une Transaction"]
     )
 
     # --- Onglet 1 : Exploration des données ---
