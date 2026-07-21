@@ -141,33 +141,36 @@ def fig_villes(df):
     return fig
 
 
-# Fonction pour tracer les boîtes à moustaches
-def fig_boxplot(df):
-    # Extraction et tri des types de transactions
-    types_tx = sorted(df["Type de transaction"].astype(str).unique())
-    # Filtrage des montants par type de transaction
-    donnees = [df.loc[(df["Type de transaction"] == t) & (df["Montant"] > 0), "Montant"] for t in types_tx]
+# Fonction pour tracer le montant moyen par canal, coloré selon le risque de fraude
+def fig_montants_canal(df):
+    # Agrégation par canal : montant moyen et taux de fraude observé
+    stats = (
+        df.groupby("Type de transaction")
+        .agg(montant_moyen=("Montant", "mean"), taux_fraude=("Target", lambda s: (s == "Fraude").mean()))
+        .sort_values("montant_moyen")
+    )
+    # Dégradé du risque : cyan (faible) -> violet -> rose (élevé), cohérent avec les statuts
+    cmap_risque = LinearSegmentedColormap.from_list("risque_canal", [CYAN, VIOLET, ROSE])
+    # Normalisation du taux de fraude pour le mappage de couleur
+    ecart = stats["taux_fraude"].max() - stats["taux_fraude"].min()
+    normalise = (stats["taux_fraude"] - stats["taux_fraude"].min()) / (ecart if ecart > 0 else 1)
+    # Couleur de chaque barre selon son niveau de risque
+    couleurs = cmap_risque(normalise)
     # Création du graphique de base sans traits
     fig, ax = _base((9.6, 3.8))
-    # Passage à une échelle logarithmique pour la lisibilité
-    ax.set_yscale("log")
-    # Dessin des boîtes à moustaches
-    ax.boxplot(
-        donnees, widths=0.4, patch_artist=True,
-        boxprops=dict(facecolor=SURFACE_HAUTE, edgecolor=ACCENT_CLAIR, linewidth=1.2),
-        medianprops=dict(color=CYAN, linewidth=2),
-        whiskerprops=dict(color=TEXTE_ATTENUE, linewidth=1),
-        capprops=dict(color=TEXTE_ATTENUE, linewidth=1),
-        flierprops=dict(marker="o", markersize=3, markerfacecolor=TEXTE_ATTENUE, markeredgecolor="none", alpha=0.4)
-    )
-    # Nom des canaux en axe X
-    ax.set_xticklabels(types_tx, color=TEXTE, fontsize=9.5, fontweight="500")
-    # Formateur personnalisé des montants en axe Y
-    ax.yaxis.set_major_formatter(lambda x, _: fmt(x))
-    # Suppression des étiquettes secondaires Y
-    ax.yaxis.set_minor_formatter(lambda x, _: "")
-    # Titre de l'axe Y
-    ax.set_ylabel("Montant (FCFA) — échelle log", fontsize=9, color=TEXTE_ATTENUE)
+    # Barres horizontales : longueur = montant moyen, couleur = taux de fraude
+    ax.barh(range(len(stats)), stats["montant_moyen"], height=0.5, color=couleurs, zorder=2)
+    # Annotation du montant moyen exact à droite de chaque barre
+    for i, v in enumerate(stats["montant_moyen"]):
+        ax.annotate(f"{fmt(v)} FCFA", (v, i), va="center", fontsize=9.5, fontweight="bold", color=TEXTE, xytext=(8, 0), textcoords="offset points")
+    # Étiquettes Y combinant le nom du canal et son taux de fraude observé
+    etiquettes = [f"{canal}   ·   {taux:.1%} de fraude" for canal, taux in zip(stats.index, stats["taux_fraude"])]
+    ax.set_yticks(range(len(stats)))
+    ax.set_yticklabels(etiquettes, color=TEXTE, fontsize=9.5, fontweight="500")
+    # Masquage des graduations X
+    ax.set_xticks([])
+    # Limite horizontale avec marge pour les annotations
+    ax.set_xlim(0, stats["montant_moyen"].max() * 1.35)
     # Ajustement des marges
     fig.tight_layout()
     # Renvoi du graphique
@@ -685,10 +688,10 @@ def main():
             carte_titre("Top 10 Villes Actives", "Volume de transactions par localisation")
             st.pyplot(fig_villes(df), use_container_width=True)
 
-        # Conteneur pour le boxplot
+        # Conteneur pour le montant moyen par canal
         with st.container(border=True):
-            carte_titre("Analyse des Montants par Canal", "Distribution financière en FCFA (Échelle Log)")
-            st.pyplot(fig_boxplot(df), use_container_width=True)
+            carte_titre("Montant Moyen & Risque par Canal", "Longueur = montant moyen (FCFA) · Couleur = taux de fraude observé")
+            st.pyplot(fig_montants_canal(df), use_container_width=True)
 
         # Conteneur pour le tableau de données
         with st.container(border=True):
