@@ -559,17 +559,46 @@ div[data-testid="stVerticalBlockBorderWrapper"] div[data-testid="stVerticalBlock
     color: #8CA0C7;
 }
 
-/* Compteur de résultats filtrés */
-.compteur {
-    display: inline-block;
-    background: rgba(76,111,255,0.15);
-    border: 1px solid rgba(76,111,255,0.35);
-    color: #7C97FF;
-    border-radius: 99px;
-    padding: 3px 12px;
-    font-size: 0.75rem;
+/* Rangée de mini-statistiques reflétant la sélection filtrée du tableau */
+.stats-filtre {
+    display: flex;
+    gap: 12px;
+    margin: 1rem 0 1.1rem 0;
+    flex-wrap: wrap;
+}
+
+.mini-stat {
+    flex: 1;
+    min-width: 170px;
+    background: #16264C;
+    border: 1px solid #2B3B6B;
+    border-left: 3px solid var(--accent-mini, #4C6FFF);
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.mini-stat .mini-stat-label {
+    font-size: 0.7rem;
     font-weight: 600;
-    margin-left: 8px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #8CA0C7;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.mini-stat .mini-stat-valeur {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #EAF0FF;
+}
+
+.mini-stat .mini-stat-valeur .mini-stat-total {
+    color: #8CA0C7;
+    font-weight: 500;
+    font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
 }
 
 /* Multiselect du filtre par statut : puces colorées et cohérentes avec le code couleur */
@@ -695,7 +724,7 @@ def main():
 
         # Conteneur pour le tableau de données
         with st.container(border=True):
-            carte_titre("Aperçu du Dataset Cleaned")
+            carte_titre("Aperçu du Dataset Cleaned", "Explorez, filtrez et inspectez chaque transaction")
 
             # Ordre fixe des statuts, garantit un code couleur stable pour les puces
             ordre_statuts = [c for c in ("Normal", "Suspect", "Fraude") if c in df["Target"].unique()]
@@ -727,16 +756,38 @@ def main():
             if recherche_ville:
                 df_filtre = df_filtre[df_filtre["Localisation"].str.contains(recherche_ville, case=False, na=False)]
 
-            # Compteur de résultats dynamique, remplace le sous-titre statique
+            # Calcul des indicateurs sur la sélection filtrée actuelle
+            taux_fraude_filtre = (df_filtre["Target"] == "Fraude").mean() if len(df_filtre) else 0
+            montant_moyen_filtre = df_filtre["Montant"].mean() if len(df_filtre) else 0
+
+            # Rangée de mini-cartes chiffrées qui réagissent au filtre, en remplacement de la simple phrase de comptage
             st.markdown(
-                f'<p class="card-sous-titre" style="margin-top:0.8rem;">{fmt(len(df_filtre))} opération(s) affichée(s)'
-                f'<span class="compteur">sur {fmt(len(df))} au total</span></p>',
+                '<div class="stats-filtre">'
+                f'<div class="mini-stat" style="--accent-mini:{ACCENT}">'
+                '<span class="mini-stat-label">Opérations affichées</span>'
+                f'<span class="mini-stat-valeur">{fmt(len(df_filtre))} '
+                f'<span class="mini-stat-total">/ {fmt(len(df))} au total</span></span>'
+                '</div>'
+                f'<div class="mini-stat" style="--accent-mini:{CYAN}">'
+                '<span class="mini-stat-label">Montant moyen (sélection)</span>'
+                f'<span class="mini-stat-valeur">{fmt(montant_moyen_filtre)} FCFA</span>'
+                '</div>'
+                f'<div class="mini-stat" style="--accent-mini:{ROSE}">'
+                '<span class="mini-stat-label">Taux de fraude (sélection)</span>'
+                f'<span class="mini-stat-valeur">{taux_fraude_filtre:.1%}</span>'
+                '</div>'
+                '</div>',
                 unsafe_allow_html=True
             )
 
+            # Tri des transactions les plus récentes en premier, et ajout d'une pastille de couleur devant le statut
+            pastille = {"Normal": "🔵", "Suspect": "🟣", "Fraude": "🔴"}
+            df_affiche = df_filtre.sort_values("Date", ascending=False).copy()
+            df_affiche["Target"] = df_affiche["Target"].map(lambda s: f"{pastille.get(s, '')} {s}")
+
             # Affichage du tableau interactif stylisé
             st.dataframe(
-                df_filtre,
+                df_affiche,
                 use_container_width=True,
                 height=320,
                 hide_index=True,
