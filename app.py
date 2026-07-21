@@ -18,42 +18,51 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classifi
 # Chemin du fichier CSV de données
 FICHIER_DONNEES = "scenario1_propre.csv"
 
-# Couleur de fond principal (Slate très sombre)
-SURFACE_BG = "#0f172a"
-# Couleur des cartes et conteneurs (Slate moyen)
-SURFACE_CARD = "#1e293b"
-# Couleur du texte principal (Blanc éclatant)
-INK = "#f8fafc"
-# Couleur du texte secondaire (Gris clair)
-INK2 = "#94a3b8"
-# Couleur des éléments discrets (Gris)
-MUTED = "#64748b"
+# =============================================================================
+# IDENTITÉ VISUELLE — « Registre des opérations »
+# Inspiration : le grand livre comptable / registre papier des agences
+# bancaires ouest-africaines. Papier ivoire, encre indigo (teinture bogolan),
+# rehauts ocre (or du Sahel) et tampon terracotta pour les alertes.
+# =============================================================================
 
-# Couleur d'accentuation principale (Cyan lumineux)
-ACCENT = "#06b6d4"
-# Couleur d'accentuation secondaire (Cyan clair)
-ACCENT_CLAIR = "#22d3ee"
-# Couleur de fond pour l'accentuation
-ACCENT_BG = "#164e63"
+# Couleur de fond général (papier ivoire)
+PAPIER = "#F4EEDF"
+# Couleur des cartes / blocs (crème plus clair, façon page)
+PAPIER_CARTE = "#FFFCF4"
+# Couleur des lignes de séparation (ligne de cahier)
+LIGNE = "#D8CCA8"
+# Couleur d'encre principale (texte, quasi noir-indigo)
+ENCRE = "#221B12"
+# Couleur d'encre atténuée (texte secondaire)
+ENCRE_ATTENUEE = "#6B6250"
+
+# Couleur d'accent principal (indigo bogolan)
+INDIGO = "#2C3E6B"
+# Couleur d'accent indigo clair
+INDIGO_CLAIR = "#4A5D95"
+# Couleur d'accent secondaire (ocre / or du Sahel)
+OCRE = "#B9862E"
+# Couleur d'alerte (tampon terracotta)
+TERRACOTTA = "#AE4430"
 
 # Dictionnaire de couleurs pour les statuts de transactions
 STATUT = {
-    "Normal": "#10b981",   # Vert Émeraude pour les cas normaux
-    "Suspect": "#f59e0b",  # Orange Ambre pour les cas suspects
-    "Fraude": "#ef4444"    # Rouge Intense pour les fraudes
+    "Normal": "#3F7A54",    # Vert sourdine, encre de validation
+    "Suspect": "#B9862E",   # Ocre, encre d'attention
+    "Fraude": "#AE4430"     # Terracotta, encre de tampon d'alerte
 }
 
-# Liste de couleurs pour le dégradé de la matrice de confusion
-SEQUENTIEL = ["#083344", "#164e63", "#155e75", "#0e7490", "#06b6d4", "#22d3ee", "#67e8f9"]
+# Dégradé séquentiel papier -> indigo pour la matrice de confusion
+SEQUENTIEL = ["#F4EEDF", "#DDD2AC", "#B7A672", "#8C7A54", "#5C6B98", "#2C3E6B", "#1B2440"]
 
-# Configuration par défaut des textes Matplotlib
+# Configuration par défaut des textes Matplotlib (police serif, esprit registre)
 plt.rcParams.update({
-    "font.family": "sans-serif",  # Police sans empattement
-    "font.size": 9.5,            # Taille de police standard
-    "text.color": INK2,           # Couleur du texte
-    "axes.labelcolor": INK2,      # Couleur des étiquettes d'axes
-    "xtick.color": INK2,         # Couleur des graduations X
-    "ytick.color": INK2,         # Couleur des graduations Y
+    "font.family": "serif",       # Police avec empattement, esprit livre relié
+    "font.size": 9.5,             # Taille de police standard
+    "text.color": ENCRE,          # Couleur du texte
+    "axes.labelcolor": ENCRE_ATTENUEE,  # Couleur des étiquettes d'axes
+    "xtick.color": ENCRE_ATTENUEE,      # Couleur des graduations X
+    "ytick.color": ENCRE_ATTENUEE,      # Couleur des graduations Y
 })
 
 
@@ -63,15 +72,18 @@ def fmt(n):
     return f"{n:,.0f}".replace(",", " ")
 
 
-# Fonction de base pour créer une figure Matplotlib sans traits ni grilles
+# Fonction de base pour créer une figure Matplotlib sobre, esprit page de registre
 def _base(figsize):
-    # Création de la figure et de l'axe avec fond sombre
-    fig, ax = plt.subplots(figsize=figsize, facecolor=SURFACE_CARD)
+    # Création de la figure et de l'axe avec fond papier
+    fig, ax = plt.subplots(figsize=figsize, facecolor=PAPIER_CARTE)
     # Définition de la couleur de fond de l'axe
-    ax.set_facecolor(SURFACE_CARD)
-    # Suppression de tous les traits d'encadrement (spines)
-    for cote in ("top", "right", "left", "bottom"):
+    ax.set_facecolor(PAPIER_CARTE)
+    # Suppression de la plupart des traits d'encadrement (spines)
+    for cote in ("top", "right", "left"):
         ax.spines[cote].set_visible(False)
+    # Conservation d'une ligne de base fine, façon ligne de cahier
+    ax.spines["bottom"].set_color(LIGNE)
+    ax.spines["bottom"].set_linewidth(1)
     # Suppression de la grille
     ax.grid(False)
     # Suppression des encoches sur les axes
@@ -86,17 +98,17 @@ def fig_target(df):
     ordre = [c for c in ("Normal", "Suspect", "Fraude") if c in df["Target"].unique()]
     # Comptage des valeurs selon l'ordre choisi
     valeurs = df["Target"].value_counts().reindex(ordre)
-    # Création de la figure de base sans traits
+    # Création de la figure de base
     fig, ax = _base((6.4, 3.6))
-    # Création du graphique en barres colorées
-    ax.bar(range(len(ordre)), valeurs, width=0.45, color=[STATUT[c] for c in ordre], zorder=2)
+    # Création du graphique en barres colorées, largeur fine façon écriture manuscrite
+    ax.bar(range(len(ordre)), valeurs, width=0.38, color=[STATUT[c] for c in ordre], zorder=2)
     # Ajout des valeurs chiffrées au-dessus des barres
     for i, v in enumerate(valeurs):
-        ax.annotate(fmt(v), (i, v), ha="center", va="bottom", fontsize=9.5, fontweight="bold", color=INK, xytext=(0, 5), textcoords="offset points")
+        ax.annotate(fmt(v), (i, v), ha="center", va="bottom", fontsize=9.5, fontweight="bold", color=ENCRE, xytext=(0, 5), textcoords="offset points")
     # Configuration des positions X
     ax.set_xticks(range(len(ordre)))
     # Configuration des étiquettes X
-    ax.set_xticklabels(ordre, color=INK, fontsize=9.5, fontweight="600")
+    ax.set_xticklabels(ordre, color=ENCRE, fontsize=9.5, fontweight="600")
     # Masquage de l'axe Y
     ax.set_yticks([])
     # Ajustement de la limite verticale
@@ -111,15 +123,15 @@ def fig_target(df):
 def fig_villes(df):
     # Extraction des 10 villes les plus fréquentes
     villes = df["Localisation"].value_counts().head(10).sort_values()
-    # Création de la figure de base sans traits
+    # Création de la figure de base
     fig, ax = _base((6.4, 3.9))
-    # Création des barres horizontales
-    ax.barh(villes.index, villes.values, height=0.5, color=ACCENT_CLAIR, zorder=2)
+    # Création des barres horizontales, couleur indigo clair
+    ax.barh(villes.index, villes.values, height=0.45, color=INDIGO_CLAIR, zorder=2)
     # Affichage du nombre exact à côté de chaque barre
     for i, v in enumerate(villes.values):
-        ax.annotate(fmt(v), (v, i), va="center", fontsize=9, color=INK, xytext=(6, 0), textcoords="offset points")
+        ax.annotate(fmt(v), (v, i), va="center", fontsize=9, color=ENCRE, xytext=(6, 0), textcoords="offset points")
     # Style des étiquettes verticales
-    ax.tick_params(axis="y", labelcolor=INK, labelsize=9.5)
+    ax.tick_params(axis="y", labelcolor=ENCRE, labelsize=9.5)
     # Masquage des graduations X
     ax.set_xticks([])
     # Définition de la limite horizontale
@@ -136,20 +148,27 @@ def fig_boxplot(df):
     types_tx = sorted(df["Type de transaction"].astype(str).unique())
     # Filtrage des montants par type de transaction
     donnees = [df.loc[(df["Type de transaction"] == t) & (df["Montant"] > 0), "Montant"] for t in types_tx]
-    # Création du graphique de base sans traits
+    # Création du graphique de base
     fig, ax = _base((9.6, 3.8))
     # Passage à une échelle logarithmique pour la lisibilité
     ax.set_yscale("log")
-    # Dessin des boîtes à moustaches
-    ax.boxplot(donnees, widths=0.4, patch_artist=True, boxprops=dict(facecolor=ACCENT_BG, edgecolor=ACCENT_CLAIR, linewidth=1.2), medianprops=dict(color=ACCENT, linewidth=2), whiskerprops=dict(color=MUTED, linewidth=1), capprops=dict(color=MUTED, linewidth=1), flierprops=dict(marker="o", markersize=3, markerfacecolor=MUTED, markeredgecolor="none", alpha=0.4))
+    # Dessin des boîtes à moustaches, encre indigo sur fond papier
+    ax.boxplot(
+        donnees, widths=0.4, patch_artist=True,
+        boxprops=dict(facecolor="#EDE4CC", edgecolor=INDIGO, linewidth=1.2),
+        medianprops=dict(color=TERRACOTTA, linewidth=2),
+        whiskerprops=dict(color=ENCRE_ATTENUEE, linewidth=1),
+        capprops=dict(color=ENCRE_ATTENUEE, linewidth=1),
+        flierprops=dict(marker="o", markersize=3, markerfacecolor=ENCRE_ATTENUEE, markeredgecolor="none", alpha=0.35)
+    )
     # Nom des canaux en axe X
-    ax.set_xticklabels(types_tx, color=INK, fontsize=9.5, fontweight="500")
+    ax.set_xticklabels(types_tx, color=ENCRE, fontsize=9.5, fontweight="500")
     # Formateur personnalisé des montants en axe Y
     ax.yaxis.set_major_formatter(lambda x, _: fmt(x))
     # Suppression des étiquettes secondaires Y
     ax.yaxis.set_minor_formatter(lambda x, _: "")
     # Titre de l'axe Y
-    ax.set_ylabel("Montant (FCFA) — échelle log", fontsize=9, color=INK2)
+    ax.set_ylabel("Montant (FCFA) — échelle log", fontsize=9, color=ENCRE_ATTENUEE)
     # Ajustement des marges
     fig.tight_layout()
     # Renvoi du graphique
@@ -158,12 +177,12 @@ def fig_boxplot(df):
 
 # Fonction pour afficher la matrice de confusion
 def fig_confusion(cm, classes):
-    # Création d'une palette dégradée cyan
-    cmap = LinearSegmentedColormap.from_list("cyan_dark", SEQUENTIEL)
+    # Création d'une palette dégradée papier -> indigo
+    cmap = LinearSegmentedColormap.from_list("registre_indigo", SEQUENTIEL)
     # Création de la figure
-    fig, ax = plt.subplots(figsize=(5.2, 4.4), facecolor=SURFACE_CARD)
+    fig, ax = plt.subplots(figsize=(5.2, 4.4), facecolor=PAPIER_CARTE)
     # Couleur de fond
-    ax.set_facecolor(SURFACE_CARD)
+    ax.set_facecolor(PAPIER_CARTE)
     # Affichage de la matrice sous forme d'image
     ax.imshow(cm, cmap=cmap)
     # Définition du seuil pour la couleur du texte
@@ -171,8 +190,8 @@ def fig_confusion(cm, classes):
     # Boucle sur les lignes et colonnes de la matrice
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
-            # Choisir blanc si fond foncé, sinon texte sombre
-            couleur = "#ffffff" if cm[i, j] > seuil else INK
+            # Choisir crème si case foncée, sinon encre
+            couleur = "#F4EEDF" if cm[i, j] > seuil else ENCRE
             # Inscription de la valeur numérique
             ax.text(j, i, fmt(cm[i, j]), ha="center", va="center", fontsize=11, fontweight="bold", color=couleur)
     # Configuration des graduations X
@@ -180,13 +199,13 @@ def fig_confusion(cm, classes):
     # Configuration des graduations Y
     ax.set_yticks(range(len(classes)))
     # Étiquettes X
-    ax.set_xticklabels(classes, color=INK, fontsize=9.5, fontweight="500")
+    ax.set_xticklabels(classes, color=ENCRE, fontsize=9.5, fontweight="500")
     # Étiquettes Y
-    ax.set_yticklabels(classes, color=INK, fontsize=9.5, fontweight="500")
+    ax.set_yticklabels(classes, color=ENCRE, fontsize=9.5, fontweight="500")
     # Légende de l'axe X
-    ax.set_xlabel("Prédiction", fontsize=9.5, color=INK2, labelpad=10)
+    ax.set_xlabel("Prédiction", fontsize=9.5, color=ENCRE_ATTENUEE, labelpad=10)
     # Légende de l'axe Y
-    ax.set_ylabel("Vraie valeur", fontsize=9.5, color=INK2, labelpad=10)
+    ax.set_ylabel("Vraie valeur", fontsize=9.5, color=ENCRE_ATTENUEE, labelpad=10)
     # Suppression des encoches
     ax.tick_params(length=0)
     # Masquage de tous les traits extérieurs
@@ -204,13 +223,13 @@ def fig_importance(modele, features):
     imp = pd.Series(modele.feature_importances_, index=features).sort_values()
     # Dictionnaire de traduction propre des noms de colonnes
     noms = {"Montant": "Montant", "Heure": "Heure", "Jour_semaine": "Jour de la semaine", "Mois": "Mois", "Localisation_enc": "Localisation", "Type de transaction_enc": "Type de transaction"}
-    # Création du graphique de base sans traits
+    # Création du graphique de base
     fig, ax = _base((5.6, 3.6))
-    # Création des barres d'importance
-    ax.barh([noms.get(f, f) for f in imp.index], imp.values, height=0.45, color=ACCENT, zorder=2)
+    # Création des barres d'importance, couleur indigo
+    ax.barh([noms.get(f, f) for f in imp.index], imp.values, height=0.42, color=INDIGO, zorder=2)
     # Affichage du score exact à côté de la barre
     for i, v in enumerate(imp.values):
-        ax.annotate(f"{v:.3f}", (v, i), va="center", fontsize=9, color=INK, xytext=(6, 0), textcoords="offset points")
+        ax.annotate(f"{v:.3f}", (v, i), va="center", fontsize=9, color=ENCRE, xytext=(6, 0), textcoords="offset points")
     # Masquer les graduations X
     ax.set_xticks([])
     # Ajuster la largeur max
@@ -223,17 +242,17 @@ def fig_importance(modele, features):
 
 # Fonction pour tracer les probabilités estimées
 def fig_probas(probas, classes):
-    # Création du graphique de base sans traits
+    # Création du graphique de base
     fig, ax = _base((6.0, 2.2))
     # Associer la couleur correspondant au statut
-    couleurs = [STATUT.get(c, ACCENT) for c in classes]
+    couleurs = [STATUT.get(c, INDIGO) for c in classes]
     # Barres de probabilités
-    ax.barh(classes, probas, height=0.45, color=couleurs, zorder=2)
+    ax.barh(classes, probas, height=0.42, color=couleurs, zorder=2)
     # Pourcentage affiché en texte
     for i, v in enumerate(probas):
-        ax.annotate(f"{v:.0%}", (v, i), va="center", fontsize=9.5, fontweight="bold", color=INK, xytext=(8, 0), textcoords="offset points")
+        ax.annotate(f"{v:.0%}", (v, i), va="center", fontsize=9.5, fontweight="bold", color=ENCRE, xytext=(8, 0), textcoords="offset points")
     # Couleur du texte des catégories
-    ax.tick_params(axis="y", labelcolor=INK, labelsize=9.5)
+    ax.tick_params(axis="y", labelcolor=ENCRE, labelsize=9.5)
     # Masquer les étiquettes X
     ax.set_xticks([])
     # Limite max de l'axe X
@@ -308,175 +327,223 @@ def entrainer_modele(df):
     return modele, encodeurs, le_target, metriques
 
 
-# Code CSS personnalisé pour le style Dark Cyan sans encadrements lourds
+# =============================================================================
+# CSS — esprit « registre papier », sans icône ni tuile IA générique.
+# Empattement Fraunces pour les titres, Plex Sans pour le texte, Plex Mono
+# pour les chiffres et références, comme sur un relevé bancaire imprimé.
+# =============================================================================
 CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-html, body, [class*="st-"], .stMarkdown, button, input, textarea {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+html, body, [class*="st-"], .stMarkdown, button, input, textarea, select {
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif !important;
 }
 
 #MainMenu, footer { visibility: hidden; }
 header[data-testid="stHeader"] { background: transparent; }
 
-/* Fond général Dark Slate */
+/* Fond général papier ivoire */
 .stApp {
-    background-color: #0f172a;
-    color: #f8fafc;
+    background-color: #F4EEDF;
+    color: #221B12;
 }
 
-.block-container { padding-top: 2rem; max-width: 1200px; }
+.block-container { padding-top: 2.2rem; max-width: 1180px; }
 
-/* Carte d'en-tête (Hero section) */
+/* En-tête façon page de garde d'un registre : filet double, pas de carte flottante */
 .hero {
-    background: #1e293b;
-    border-radius: 16px;
-    padding: 1.8rem 2.2rem;
-    margin-bottom: 1.5rem;
+    border-top: 3px solid #221B12;
+    border-bottom: 1px solid #221B12;
+    padding: 0.9rem 0 1.3rem 0;
+    margin-bottom: 1.8rem;
+}
+
+.hero .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #B9862E;
+    font-weight: 600;
 }
 
 .hero h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0;
-    color: #f8fafc;
+    font-family: 'Fraunces', serif;
+    font-size: 2.35rem;
+    font-weight: 600;
+    margin: 0.25rem 0 0.3rem 0;
+    color: #221B12;
+    letter-spacing: -0.01em;
 }
 
 .hero p {
-    color: #94a3b8;
-    margin: 0.4rem 0 0 0;
+    color: #6B6250;
+    margin: 0;
     font-size: 0.95rem;
+    font-style: italic;
 }
 
-/* Badge du modèle sans icône */
-.badge {
-    display: inline-block;
-    background: #164e63;
-    color: #22d3ee;
-    border-radius: 99px;
-    padding: 4px 14px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    margin-left: 10px;
-    vertical-align: middle;
+.hero .ref {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: #6B6250;
+    float: right;
+    margin-top: 0.4rem;
 }
 
-/* Style des cartes / conteneurs Streamlit sans bordures */
+/* Cartes / conteneurs Streamlit : filet fin, pas d'arrondi lourd, pas d'ombre */
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #1e293b;
-    border: none !important;
-    border-radius: 14px !important;
+    background: #FFFCF4;
+    border: 1px solid #D8CCA8 !important;
+    border-radius: 3px !important;
 }
 
 .card-titre {
-    font-size: 1rem;
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
     font-weight: 600;
-    color: #f8fafc;
-    margin: 0 0 0.1rem 0;
+    color: #221B12;
+    margin: 0 0 0.15rem 0;
 }
 
 .card-sous-titre {
-    font-size: 0.82rem;
-    color: #94a3b8;
-    margin: 0 0 0.8rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+    color: #6B6250;
+    margin: 0 0 0.9rem 0;
+    text-transform: uppercase;
 }
 
-/* Métriques d'en-tête (KPIs) */
+/* Métriques : entrées de registre, chiffres en mono, séparées par un filet */
 [data-testid="stMetric"] {
-    background: #1e293b;
+    background: #FFFCF4;
     border: none;
-    border-radius: 12px;
-    padding: 16px 20px;
+    border-bottom: 2px solid #221B12;
+    border-radius: 0;
+    padding: 10px 4px 12px 4px;
 }
 
 [data-testid="stMetricLabel"] p {
-    color: #94a3b8;
-    font-size: 0.82rem;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #6B6250;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     font-weight: 500;
 }
 
 [data-testid="stMetricValue"] {
-    color: #38bdf8;
+    font-family: 'Fraunces', serif;
+    color: #2C3E6B;
     font-weight: 700;
-    font-size: 1.6rem;
+    font-size: 1.7rem;
 }
 
-/* Onglets personnalisés */
+/* Onglets : soulignement façon signets de registre, pas de pilules pleines */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
+    gap: 26px;
     background: transparent;
-    padding: 0 0 10px 0;
-    border-bottom: none;
+    padding: 0 0 0 0;
+    border-bottom: 1px solid #D8CCA8;
 }
 
 .stTabs [data-baseweb="tab"] {
-    height: 40px;
-    padding: 0 20px;
-    color: #94a3b8;
+    height: 38px;
+    padding: 0 2px;
+    color: #6B6250;
     font-weight: 500;
-    background: #0f172a;
+    background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: 0;
 }
 
 .stTabs [aria-selected="true"] {
-    color: #06b6d4 !important;
-    background: #164e63 !important;
+    color: #221B12 !important;
+    background: transparent !important;
     font-weight: 600 !important;
+    border-bottom: 2px solid #B9862E !important;
 }
 
-/* Boutons d'action */
+/* Boutons : rectangulaires, encre indigo, petites capitales espacées */
 .stFormSubmitButton button, .stButton button {
-    background: #0891b2;
-    color: #ffffff;
+    background: #2C3E6B;
+    color: #F4EEDF;
     border: none;
-    border-radius: 8px;
+    border-radius: 2px;
     padding: 0.6rem 2rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.85rem;
     width: 100%;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease;
 }
 
 .stFormSubmitButton button:hover, .stButton button:hover {
-    background: #06b6d4;
-    color: #ffffff;
+    background: #1B2440;
+    color: #F4EEDF;
 }
 
-/* Cartes d'affichage des résultats de prédiction */
-.resultat {
-    border-radius: 10px;
-    padding: 16px;
-    font-weight: 600;
-    font-size: 1.05rem;
+/* Tampon de diagnostic : remplace la pastille pleine par un cachet circulaire */
+.tampon-cadre {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.2rem 0 0.6rem 0;
+}
+
+.tampon {
+    width: 148px;
+    height: 148px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    margin-bottom: 1rem;
+    transform: rotate(-7deg);
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.3;
 }
 
-.resultat.normal {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+.tampon-interieur {
+    width: 122px;
+    height: 122px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
 }
 
-.resultat.suspect {
-    background: rgba(245, 158, 11, 0.15);
-    color: #fbbf24;
-}
+.tampon.normal { border: 2px solid #3F7A54; }
+.tampon.normal .tampon-interieur { border: 1px dashed #3F7A54; color: #3F7A54; }
 
-.resultat.fraude {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
-}
+.tampon.suspect { border: 2px solid #B9862E; }
+.tampon.suspect .tampon-interieur { border: 1px dashed #B9862E; color: #B9862E; }
 
-/* Style du tableau Streamlit */
+.tampon.fraude { border: 2px solid #AE4430; }
+.tampon.fraude .tampon-interieur { border: 1px dashed #AE4430; color: #AE4430; }
+
+/* Style du tableau Streamlit, esprit page de grand livre */
 div[data-testid="stDataFrame"] {
-    background-color: #1e293b;
-    border-radius: 10px;
+    background-color: #FFFCF4;
+    border-radius: 2px;
+    border: 1px solid #D8CCA8;
     overflow: hidden;
 }
 
 div[data-testid="stDataFrame"] iframe {
-    border-radius: 10px;
+    border-radius: 2px;
+}
+
+code, .stCodeBlock, pre {
+    font-family: 'IBM Plex Mono', monospace !important;
 }
 </style>
 """
@@ -494,7 +561,7 @@ def carte_titre(titre, sous_titre=None):
 # Fonction principale exécutant l'application
 def main():
     # Configuration initiale de la page web
-    st.set_page_config(page_title="Détection de fraude bancaire", layout="wide")
+    st.set_page_config(page_title="Registre des transactions — Détection de fraude", layout="wide")
     # Application des styles CSS
     st.markdown(CSS, unsafe_allow_html=True)
 
@@ -503,11 +570,13 @@ def main():
     # Entraînement du modèle et récupération des métriques
     modele, encodeurs, le_target, metriques = entrainer_modele(df)
 
-    # Création du bloc d'en-tête sans icônes
+    # Création du bloc d'en-tête façon page de garde, sans icône ni pastille
     st.markdown(
         '<div class="hero">'
-        '<h1>Détection de Fraude Bancaire <span class="badge">Random Forest</span></h1>'
-        '<p>Plateforme de surveillance et d\'évaluation du risque des transactions sénégalaises — Scénario 1</p>'
+        '<span class="ref">RÉF. SCÉNARIO 1 · MODÈLE FORÊT ALÉATOIRE</span>'
+        '<div class="eyebrow">Registre des opérations</div>'
+        '<h1>Surveillance de la fraude bancaire</h1>'
+        '<p>Relevé d\'analyse et d\'évaluation du risque des transactions sénégalaises</p>'
         '</div>',
         unsafe_allow_html=True
     )
@@ -549,10 +618,10 @@ def main():
             carte_titre("Analyse des Montants par Canal", "Distribution financière en FCFA (Échelle Log)")
             st.pyplot(fig_boxplot(df), use_container_width=True)
 
-        # Conteneur redesigné pour le tableau de données
+        # Conteneur pour le tableau de données
         with st.container(border=True):
             carte_titre("Aperçu du Dataset Cleaned", f"{fmt(len(df))} opérations enregistrées au total")
-            
+
             # Barre d'outils de filtrage rapide au-dessus du tableau
             f_col1, f_col2 = st.columns([1, 2])
             with f_col1:
@@ -633,7 +702,7 @@ def main():
                 ville = st.selectbox("Localisation", sorted(df["Localisation"].astype(str).unique()))
                 # Sélection du canal de paiement
                 type_tx = st.selectbox("Type de canal", sorted(df["Type de transaction"].astype(str).unique()))
-                
+
                 # Sous-colonnes pour la date et heure
                 c_h, c_j, c_m = st.columns(3)
                 with c_h:
@@ -647,7 +716,7 @@ def main():
                 with c_m:
                     # Sélecteur de mois
                     mois = st.slider("Mois", 1, 12, 6)
-                
+
                 # Bouton de soumission
                 envoyer = st.form_submit_button("Lancer l'évaluation")
 
@@ -668,15 +737,17 @@ def main():
                 # Calcul des probabilités pour chaque classe
                 probas = modele.predict_proba(entree)[0]
 
-                # Affichage de la carte de résultat
+                # Affichage de la carte de résultat sous forme de cachet
                 with st.container(border=True):
                     carte_titre("Diagnostic du Modèle")
                     # Classe CSS dynamique
                     classe_css = prediction.lower()
-                    # Inscription du résultat stylisé
+                    # Inscription du résultat sous forme de tampon circulaire
                     st.markdown(
-                        f'<div class="resultat {classe_css}">'
-                        f'Résultat : {prediction.upper()}</div>',
+                        f'<div class="tampon-cadre">'
+                        f'<div class="tampon {classe_css}">'
+                        f'<div class="tampon-interieur">{prediction}</div>'
+                        f'</div></div>',
                         unsafe_allow_html=True
                     )
                     # Graphique des probabilités
