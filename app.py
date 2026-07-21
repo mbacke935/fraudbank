@@ -785,7 +785,7 @@ def main():
 
     # Création des onglets
     onglet_donnees, onglet_modele, onglet_prediction = st.tabs(
-        ["Données & Exploration", "Performance Modèle", "Inférence & Simulation"]
+        ["Exploration des Données", "Performance du Modèle", "Simuler une Transaction"]
     )
 
     # --- Onglet 1 : Exploration des données ---
