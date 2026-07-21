@@ -39,18 +39,23 @@ TEXTE_ATTENUE = "#8CA0C7"
 ACCENT = "#4C6FFF"
 # Accent principal, variante claire (dégradés, survols)
 ACCENT_CLAIR = "#7C97FF"
-# Accent secondaire (sarcelle, complémentaire du bleu)
-SARCELLE = "#14D6B8"
+# Accent secondaire froid (cyan, reste dans la famille du bleu — info/validation)
+CYAN = "#22D3EE"
+# Accent secondaire froid (violet, toujours dans un registre bleu-froid — vigilance)
+VIOLET = "#A78BFA"
+# Seul accent chaud de toute l'interface, réservé exclusivement à l'alerte la plus grave
+ROSE = "#F43F5E"
 
 # Dictionnaire de couleurs pour les statuts de transactions
+# Un seul repère chaud (Fraude) ressort volontairement sur fond de palette froide
 STATUT = {
-    "Normal": "#14D6B8",   # Sarcelle : validation
-    "Suspect": "#F6B93B",  # Ambre : vigilance
-    "Fraude": "#FF5E77"    # Corail : alerte
+    "Normal": CYAN,    # Cyan : validation, reste dans la famille du bleu
+    "Suspect": VIOLET, # Violet : vigilance, toujours froid
+    "Fraude": ROSE      # Rose/rouge : seule alerte chaude de l'app
 }
 
-# Dégradé séquentiel pour la matrice de confusion (marine -> indigo -> sarcelle)
-SEQUENTIEL = ["#101C3B", "#182A55", "#233F7E", "#3557B0", "#4C6FFF", "#7C97FF", "#B7E9E0"]
+# Dégradé séquentiel pour la matrice de confusion (marine -> indigo -> cyan)
+SEQUENTIEL = ["#101C3B", "#182A55", "#233F7E", "#3557B0", "#4C6FFF", "#7C97FF", "#A5F3FC"]
 
 # Configuration par défaut des textes Matplotlib
 plt.rcParams.update({
@@ -120,7 +125,7 @@ def fig_villes(df):
     # Création de la figure de base sans traits
     fig, ax = _base((6.4, 3.9))
     # Création des barres horizontales
-    ax.barh(villes.index, villes.values, height=0.5, color=ACCENT_CLAIR, zorder=2)
+    ax.barh(villes.index, villes.values, height=0.5, color=CYAN, zorder=2)
     # Affichage du nombre exact à côté de chaque barre
     for i, v in enumerate(villes.values):
         ax.annotate(fmt(v), (v, i), va="center", fontsize=9, color=TEXTE, xytext=(6, 0), textcoords="offset points")
@@ -150,7 +155,7 @@ def fig_boxplot(df):
     ax.boxplot(
         donnees, widths=0.4, patch_artist=True,
         boxprops=dict(facecolor=SURFACE_HAUTE, edgecolor=ACCENT_CLAIR, linewidth=1.2),
-        medianprops=dict(color=SARCELLE, linewidth=2),
+        medianprops=dict(color=CYAN, linewidth=2),
         whiskerprops=dict(color=TEXTE_ATTENUE, linewidth=1),
         capprops=dict(color=TEXTE_ATTENUE, linewidth=1),
         flierprops=dict(marker="o", markersize=3, markerfacecolor=TEXTE_ATTENUE, markeredgecolor="none", alpha=0.4)
@@ -516,24 +521,24 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 }
 
 .diagnostic.normal {
-    background: rgba(20,214,184,0.08);
-    border-color: rgba(20,214,184,0.4);
-    border-left: 4px solid #14D6B8;
-    color: #14D6B8;
+    background: rgba(34,211,238,0.08);
+    border-color: rgba(34,211,238,0.4);
+    border-left: 4px solid #22D3EE;
+    color: #22D3EE;
 }
 
 .diagnostic.suspect {
-    background: rgba(246,185,59,0.08);
-    border-color: rgba(246,185,59,0.4);
-    border-left: 4px solid #F6B93B;
-    color: #F6B93B;
+    background: rgba(167,139,250,0.08);
+    border-color: rgba(167,139,250,0.4);
+    border-left: 4px solid #A78BFA;
+    color: #A78BFA;
 }
 
 .diagnostic.fraude {
-    background: rgba(255,94,119,0.08);
-    border-color: rgba(255,94,119,0.4);
-    border-left: 4px solid #FF5E77;
-    color: #FF5E77;
+    background: rgba(244,63,94,0.1);
+    border-color: rgba(244,63,94,0.45);
+    border-left: 4px solid #F43F5E;
+    color: #F43F5E;
 }
 
 /* Sous-panneau imbriqué (barre de filtres) : fond distinct, plus clair que la carte parente */
@@ -571,9 +576,9 @@ div[data-baseweb="tag"] {
     border: none !important;
 }
 
-div[data-baseweb="tag"]:nth-of-type(3n+1) { background: rgba(20,214,184,0.18) !important; color: #14D6B8 !important; }
-div[data-baseweb="tag"]:nth-of-type(3n+2) { background: rgba(246,185,59,0.18) !important; color: #F6B93B !important; }
-div[data-baseweb="tag"]:nth-of-type(3n+3) { background: rgba(255,94,119,0.18) !important; color: #FF5E77 !important; }
+div[data-baseweb="tag"]:nth-of-type(3n+1) { background: rgba(34,211,238,0.18) !important; color: #22D3EE !important; }
+div[data-baseweb="tag"]:nth-of-type(3n+2) { background: rgba(167,139,250,0.18) !important; color: #A78BFA !important; }
+div[data-baseweb="tag"]:nth-of-type(3n+3) { background: rgba(244,63,94,0.2) !important; color: #F43F5E !important; }
 
 div[data-baseweb="tag"] svg { fill: currentColor !important; }
 
