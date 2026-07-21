@@ -11,17 +11,18 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classifi
 # Fichier de données par défaut
 FICHIER_DONNEES = "scenario1_propre.csv"
 
-# ----------------------------------------------------------------- Palette & Style
-SURFACE = "#111827"       # Slate 900 (Fond de carte)
-SURFACE_CARD = "#1f2937"  # Slate 800
-INK = "#f9fafb"           # Blanc principal
-INK2 = "#9ca3af"          # Gris secondaire
-MUTED = "#6b7280"         # Gris atténué
-GRID = "#374151"          # Lignes de grille sombres
-BASELINE = "#4b5563"      # Lignes d'axes
-ACCENT = "#6366f1"        # Indigo principal
-ACCENT_CLAIR = "#818cf8"
-ACCENT_FONCE = "#3730a3"
+# ----------------------------------------------------------------- Palette Light Minimal
+SURFACE_BG = "#f8fafc"      # Slate 50 (Fond principal)
+SURFACE_CARD = "#ffffff"    # Blanc pur (Cartes)
+INK = "#0f172a"             # Slate 900 (Texte principal)
+INK2 = "#475569"            # Slate 600 (Texte secondaire)
+MUTED = "#94a3b8"           # Slate 400 (Éléments discrets)
+GRID = "#f1f5f9"            # Slate 100 (Grilles)
+BASELINE = "#cbd5e1"        # Slate 300 (Axes)
+
+ACCENT = "#2563eb"          # Bleu Cobalt principal
+ACCENT_CLAIR = "#3b82f6"    # Bleu moyen
+ACCENT_BG = "#eff6ff"       # Fond bleu très doux
 
 STATUT = {
     "Normal": "#10b981",   # Émeraude
@@ -29,7 +30,7 @@ STATUT = {
     "Fraude": "#ef4444"    # Rouge
 }
 
-SEQUENTIEL = ["#1e1b4b", "#312e81", "#4338ca", "#6366f1", "#818cf8", "#a5b4fc", "#c7d2fe"]
+SEQUENTIEL = ["#eff6ff", "#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#1d4ed8"]
 
 # Configuration globale des graphiques Matplotlib
 plt.rcParams.update({
@@ -37,8 +38,8 @@ plt.rcParams.update({
     "font.size": 9.5,
     "text.color": INK2,
     "axes.labelcolor": INK2,
-    "xtick.color": MUTED,
-    "ytick.color": MUTED,
+    "xtick.color": INK2,
+    "ytick.color": INK2,
 })
 
 
@@ -48,7 +49,7 @@ def fmt(n):
 
 
 def _base(figsize):
-    """Crée une base de graphique Matplotlib harmonisée avec le thème sombre."""
+    """Crée une base de graphique Matplotlib harmonisée avec le thème clair."""
     fig, ax = plt.subplots(figsize=figsize, facecolor=SURFACE_CARD)
     ax.set_facecolor(SURFACE_CARD)
     for cote in ("top", "right"):
@@ -67,7 +68,7 @@ def fig_target(df):
     ordre = [c for c in ("Normal", "Suspect", "Fraude") if c in df["Target"].unique()]
     valeurs = df["Target"].value_counts().reindex(ordre)
     fig, ax = _base((6.4, 3.6))
-    ax.grid(axis="y", color=GRID, linewidth=0.6, linestyle="--")
+    ax.grid(axis="y", color=GRID, linewidth=0.8, linestyle="-")
     ax.spines["left"].set_visible(False)
     ax.bar(range(len(ordre)), valeurs, width=0.45,
            color=[STATUT[c] for c in ordre], zorder=2)
@@ -76,7 +77,7 @@ def fig_target(df):
                     fontsize=9.5, fontweight="bold", color=INK, xytext=(0, 5),
                     textcoords="offset points")
     ax.set_xticks(range(len(ordre)))
-    ax.set_xticklabels(ordre, color=INK, fontsize=9.5, fontweight="500")
+    ax.set_xticklabels(ordre, color=INK, fontsize=9.5, fontweight="600")
     ax.set_ylim(0, valeurs.max() * 1.15)
     fig.tight_layout()
     return fig
@@ -86,7 +87,7 @@ def fig_villes(df):
     """Graphique horizontal du Top 10 des villes."""
     villes = df["Localisation"].value_counts().head(10).sort_values()
     fig, ax = _base((6.4, 3.9))
-    ax.grid(axis="x", color=GRID, linewidth=0.6, linestyle="--")
+    ax.grid(axis="x", color=GRID, linewidth=0.8, linestyle="-")
     ax.spines["bottom"].set_visible(False)
     ax.barh(villes.index, villes.values, height=0.5, color=ACCENT_CLAIR, zorder=2)
     for i, v in enumerate(villes.values):
@@ -105,40 +106,40 @@ def fig_boxplot(df):
     donnees = [df.loc[(df["Type de transaction"] == t) & (df["Montant"] > 0), "Montant"]
                for t in types_tx]
     fig, ax = _base((9.6, 3.8))
-    ax.grid(axis="y", color=GRID, linewidth=0.6, linestyle="--")
+    ax.grid(axis="y", color=GRID, linewidth=0.8, linestyle="-")
     ax.set_yscale("log")
     ax.boxplot(donnees, widths=0.4, patch_artist=True,
-               boxprops=dict(facecolor=ACCENT_FONCE, edgecolor=ACCENT_CLAIR, linewidth=1.2),
-               medianprops=dict(color="#38bdf8", linewidth=2),
+               boxprops=dict(facecolor=ACCENT_BG, edgecolor=ACCENT_CLAIR, linewidth=1.2),
+               medianprops=dict(color=ACCENT, linewidth=2),
                whiskerprops=dict(color=BASELINE, linewidth=1),
                capprops=dict(color=BASELINE, linewidth=1),
                flierprops=dict(marker="o", markersize=3,
                                markerfacecolor=MUTED, markeredgecolor="none",
-                               alpha=0.5))
-    ax.set_xticklabels(types_tx, color=INK, fontsize=9.5)
+                               alpha=0.4))
+    ax.set_xticklabels(types_tx, color=INK, fontsize=9.5, fontweight="500")
     ax.yaxis.set_major_formatter(lambda x, _: fmt(x))
     ax.yaxis.set_minor_formatter(lambda x, _: "")
-    ax.set_ylabel("Montant (FCFA) — échelle log", fontsize=9)
+    ax.set_ylabel("Montant (FCFA) — échelle log", fontsize=9, color=INK2)
     fig.tight_layout()
     return fig
 
 
 def fig_confusion(cm, classes):
-    """Matrice de confusion sous forme de Heatmap sombre."""
-    cmap = LinearSegmentedColormap.from_list("indigo_dark", SEQUENTIEL)
+    """Matrice de confusion sous forme de Heatmap lumineuse."""
+    cmap = LinearSegmentedColormap.from_list("blue_light", SEQUENTIEL)
     fig, ax = plt.subplots(figsize=(5.2, 4.4), facecolor=SURFACE_CARD)
     ax.set_facecolor(SURFACE_CARD)
     ax.imshow(cm, cmap=cmap)
     seuil = cm.max() * 0.55
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
-            couleur = "#ffffff" if cm[i, j] > seuil else INK2
+            couleur = "#ffffff" if cm[i, j] > seuil else INK
             ax.text(j, i, fmt(cm[i, j]), ha="center", va="center",
                     fontsize=11, fontweight="bold", color=couleur)
     ax.set_xticks(range(len(classes)))
     ax.set_yticks(range(len(classes)))
-    ax.set_xticklabels(classes, color=INK, fontsize=9.5)
-    ax.set_yticklabels(classes, color=INK, fontsize=9.5)
+    ax.set_xticklabels(classes, color=INK, fontsize=9.5, fontweight="500")
+    ax.set_yticklabels(classes, color=INK, fontsize=9.5, fontweight="500")
     ax.set_xlabel("Prédiction", fontsize=9.5, color=INK2, labelpad=10)
     ax.set_ylabel("Vraie valeur", fontsize=9.5, color=INK2, labelpad=10)
     ax.tick_params(length=0)
@@ -155,10 +156,10 @@ def fig_importance(modele, features):
             "Mois": "Mois", "Localisation_enc": "Localisation",
             "Type de transaction_enc": "Type de transaction"}
     fig, ax = _base((5.6, 3.6))
-    ax.grid(axis="x", color=GRID, linewidth=0.6, linestyle="--")
+    ax.grid(axis="x", color=GRID, linewidth=0.8, linestyle="-")
     ax.spines["bottom"].set_visible(False)
     ax.barh([noms.get(f, f) for f in imp.index], imp.values, height=0.45,
-            color=ACCENT_CLAIR, zorder=2)
+            color=ACCENT, zorder=2)
     for i, v in enumerate(imp.values):
         ax.annotate(f"{v:.3f}", (v, i), va="center", fontsize=9,
                     color=INK, xytext=(6, 0), textcoords="offset points")
@@ -171,7 +172,7 @@ def fig_importance(modele, features):
 def fig_probas(probas, classes):
     """Barres horizontales affichant les probabilités prédites."""
     fig, ax = _base((6.0, 2.2))
-    ax.grid(axis="x", color=GRID, linewidth=0.6, linestyle="--")
+    ax.grid(axis="x", color=GRID, linewidth=0.8, linestyle="-")
     ax.spines["bottom"].set_visible(False)
     couleurs = [STATUT.get(c, ACCENT) for c in classes]
     ax.barh(classes, probas, height=0.45, color=couleurs, zorder=2)
@@ -236,7 +237,7 @@ def entrainer_modele(df):
     return modele, encodeurs, le_target, metriques
 
 
-# ----------------------------------------------------------------- Feuilles de Style CSS
+# ----------------------------------------------------------------- CSS Tech Light
 CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -248,99 +249,88 @@ html, body, [class*="st-"], .stMarkdown, button, input, textarea {
 #MainMenu, footer { visibility: hidden; }
 header[data-testid="stHeader"] { background: transparent; }
 
-/* Background général Dark Mode */
+/* Background général Light Mode */
 .stApp {
-    background-color: #0b0f17;
-    background-image: 
-        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.08) 0px, transparent 50%);
-    color: #f9fafb;
+    background-color: #f8fafc;
+    color: #0f172a;
 }
 
 .block-container { padding-top: 2rem; max-width: 1200px; }
 
 /* En-tête / Hero Section */
 .hero {
-    background: linear-gradient(135deg, rgba(31, 41, 55, 0.6) 0%, rgba(17, 24, 39, 0.8) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 20px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
     padding: 1.8rem 2.2rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
 .hero h1 {
-    font-size: 2.1rem;
+    font-size: 2rem;
     font-weight: 700;
     margin: 0;
-    background: linear-gradient(90deg, #ffffff 0%, #a5b4fc 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #0f172a;
 }
 
 .hero p {
-    color: #9ca3af;
+    color: #64748b;
     margin: 0.4rem 0 0 0;
     font-size: 0.95rem;
 }
 
 .badge {
     display: inline-block;
-    background: rgba(99, 102, 241, 0.15);
-    color: #818cf8;
-    border: 1px solid rgba(129, 140, 248, 0.3);
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
     border-radius: 99px;
     padding: 4px 14px;
     font-size: 0.78rem;
     font-weight: 600;
-    margin-left: 12px;
+    margin-left: 10px;
     vertical-align: middle;
 }
 
 /* Containers de cartes */
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #1f2937;
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-    border-color: rgba(129, 140, 248, 0.25) !important;
+    background: #ffffff;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
 }
 
 .card-titre {
-    font-size: 1.02rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: #f3f4f6;
+    color: #0f172a;
     margin: 0 0 0.1rem 0;
 }
 
 .card-sous-titre {
-    font-size: 0.8rem;
-    color: #9ca3af;
+    font-size: 0.82rem;
+    color: #64748b;
     margin: 0 0 0.8rem 0;
 }
 
 /* Métriques (KPI) */
 [data-testid="stMetric"] {
-    background: #1f2937;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     padding: 16px 20px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
 }
 
 [data-testid="stMetricLabel"] p {
-    color: #9ca3af;
+    color: #64748b;
     font-size: 0.82rem;
     font-weight: 500;
 }
 
 [data-testid="stMetricValue"] {
-    color: #f9fafb;
+    color: #0f172a;
     font-weight: 700;
     font-size: 1.6rem;
 }
@@ -348,7 +338,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 /* Onglets Custom */
 .stTabs [data-baseweb="tab-list"] {
     gap: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid #e2e8f0;
     background: transparent;
     padding: 0 0 10px 0;
 }
@@ -356,42 +346,42 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .stTabs [data-baseweb="tab"] {
     height: 40px;
     padding: 0 20px;
-    color: #9ca3af;
+    color: #64748b;
     font-weight: 500;
-    background: #111827;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
 }
 
 .stTabs [aria-selected="true"] {
-    color: #ffffff !important;
-    background: #4338ca !important;
-    border-color: #6366f1 !important;
+    color: #2563eb !important;
+    background: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    font-weight: 600 !important;
 }
 
 /* Boutons */
 .stFormSubmitButton button, .stButton button {
-    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    background: #2563eb;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
+    border: none;
+    border-radius: 8px;
     padding: 0.6rem 2rem;
     font-weight: 600;
     width: 100%;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
     transition: all 0.2s ease;
 }
 
 .stFormSubmitButton button:hover, .stButton button:hover {
-    background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+    background: #1d4ed8;
     color: #ffffff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 /* Cartes de résultats */
 .resultat {
-    border-radius: 12px;
+    border-radius: 10px;
     padding: 16px;
     font-weight: 600;
     font-size: 1.05rem;
@@ -400,21 +390,21 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 
 .resultat.normal {
-    background: rgba(16, 185, 129, 0.12);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
 }
 
 .resultat.suspect {
-    background: rgba(245, 158, 11, 0.12);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
 }
 
 .resultat.fraude {
-    background: rgba(239, 68, 68, 0.12);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
 }
 </style>
 """
